@@ -1,0 +1,21 @@
+{
+  "name": "@huserben/tfsrestservice",
+  "version": "1.0.0",
+  "description": "Service which abstracts calls to the TFS/VSTS REST API and exposes the objects to the clients for further usage.",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "TFS"
+  ],
+  "author": "Benj Huser",
+  "license": "MIT",
+  "dependencies": {
+    "@types/node": "^8.0.47"
+  },
+  "devDependencies": {
+    "@types/node": "^8.0.47",
+    "web-request": "^1.0.7"
+  }
+}
