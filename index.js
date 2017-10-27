@@ -230,8 +230,7 @@ class TfsRestService {
             }
             else {
                 console.error("Unknown error - printing complete return value from server.");
-                console.error(`Consider raising an issue at github if problem cannot be solved:
-                https://github.com/huserben/TfsExtensions/issues`);
+                console.error(`Consider raising an issue at github if problem cannot be solved.`);
                 console.error(resultAsJson);
             }
         }
