@@ -56,7 +56,7 @@ exports.BuildStateNotStarted = "notStarted";
 exports.BuildStateInProgress = "inProgress";
 exports.BuildStateCompleted = "completed";
 exports.BuildResultSucceeded = "succeeded";
-var TfsRestService = /** @class */ (function () {
+var TfsRestService = (function () {
     function TfsRestService() {
     }
     TfsRestService.prototype.initialize = function (authenticationMethod, username, password, tfsServer, ignoreSslError) {
@@ -103,14 +103,14 @@ var TfsRestService = /** @class */ (function () {
             var buildDefinitionID, requestUrl, result;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getBuildDefinitionId(buildDefinitionName)];
+                    case 0: return [4, this.getBuildDefinitionId(buildDefinitionName)];
                     case 1:
                         buildDefinitionID = _a.sent();
                         requestUrl = "build/builds?api-version=2.0&definitions=" + buildDefinitionID + "&statusFilter=" + statusFilter;
-                        return [4 /*yield*/, WebRequest.json(requestUrl, this.options)];
+                        return [4, WebRequest.json(requestUrl, this.options)];
                     case 2:
                         result = _a.sent();
-                        return [2 /*return*/, result.value];
+                        return [2, result.value];
                 }
             });
         });
@@ -120,7 +120,7 @@ var TfsRestService = /** @class */ (function () {
             var buildId, queueBuildUrl, queueBuildBody, result, resultAsJson, triggeredBuildID;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getBuildDefinitionId(buildDefinitionName)];
+                    case 0: return [4, this.getBuildDefinitionId(buildDefinitionName)];
                     case 1:
                         buildId = _a.sent();
                         queueBuildUrl = "build/builds?api-version=2.0";
@@ -147,16 +147,15 @@ var TfsRestService = /** @class */ (function () {
                         }
                         queueBuildBody += "}";
                         console.log("Queue new Build for definition " + buildDefinitionName);
-                        return [4 /*yield*/, WebRequest.post(queueBuildUrl, this.options, queueBuildBody)];
+                        return [4, WebRequest.post(queueBuildUrl, this.options, queueBuildBody)];
                     case 2:
                         result = _a.sent();
                         resultAsJson = JSON.parse(result.content);
                         triggeredBuildID = resultAsJson.id;
-                        // if we are not able to fetch the expected JSON it means something went wrong and we got back some exception from TFS.
                         if (triggeredBuildID === undefined) {
                             this.handleValidationError(resultAsJson);
                         }
-                        return [2 /*return*/, triggeredBuildID];
+                        return [2, triggeredBuildID];
                 }
             });
         });
@@ -171,19 +170,19 @@ var TfsRestService = /** @class */ (function () {
                         _i = 0, triggeredBuilds_1 = triggeredBuilds;
                         _a.label = 1;
                     case 1:
-                        if (!(_i < triggeredBuilds_1.length)) return [3 /*break*/, 6];
+                        if (!(_i < triggeredBuilds_1.length)) return [3, 6];
                         queuedBuildId = triggeredBuilds_1[_i];
-                        return [4 /*yield*/, this.isBuildFinished(queuedBuildId)];
+                        return [4, this.isBuildFinished(queuedBuildId)];
                     case 2:
                         buildFinished = _a.sent();
-                        if (!!buildFinished) return [3 /*break*/, 3];
+                        if (!!buildFinished) return [3, 3];
                         console.log("Build " + queuedBuildId + " has not yet completed");
                         result = false;
-                        return [3 /*break*/, 5];
+                        return [3, 5];
                     case 3:
                         result = result && true;
                         console.log("Build " + queuedBuildId + " has completed");
-                        return [4 /*yield*/, this.wasBuildSuccessful(queuedBuildId)];
+                        return [4, this.wasBuildSuccessful(queuedBuildId)];
                     case 4:
                         buildSuccessful = _a.sent();
                         if (failIfNotSuccessful && !buildSuccessful) {
@@ -192,8 +191,8 @@ var TfsRestService = /** @class */ (function () {
                         _a.label = 5;
                     case 5:
                         _i++;
-                        return [3 /*break*/, 1];
-                    case 6: return [2 /*return*/, result];
+                        return [3, 1];
+                    case 6: return [2, result];
                 }
             });
         });
@@ -213,7 +212,7 @@ var TfsRestService = /** @class */ (function () {
                             downloadDirectory += "\\";
                         }
                         requestUrl = "build/builds/" + buildId + "/artifacts";
-                        return [4 /*yield*/, WebRequest.json(requestUrl, this.options)];
+                        return [4, WebRequest.json(requestUrl, this.options)];
                     case 1:
                         result = _b.sent();
                         if (result.count === undefined) {
@@ -223,11 +222,10 @@ var TfsRestService = /** @class */ (function () {
                         _i = 0, _a = result.value;
                         _b.label = 2;
                     case 2:
-                        if (!(_i < _a.length)) return [3 /*break*/, 6];
+                        if (!(_i < _a.length)) return [3, 6];
                         artifact = _a[_i];
                         console.log("Downloading artifact " + artifact.name + "...");
                         fileFormat = url.parse(artifact.resource.downloadUrl, true).query.$format;
-                        // if for whatever reason we cannot get the file format from the url just try with zip.
                         if (fileFormat === null || fileFormat === undefined) {
                             fileFormat = "zip";
                         }
@@ -243,18 +241,18 @@ var TfsRestService = /** @class */ (function () {
                             "Content-Type": "application/" + fileFormat
                         };
                         this.options.encoding = null;
-                        return [4 /*yield*/, WebRequest.stream(artifact.resource.downloadUrl, this.options)];
+                        return [4, WebRequest.stream(artifact.resource.downloadUrl, this.options)];
                     case 3:
                         request = _b.sent();
-                        return [4 /*yield*/, request.pipe(fs.createWriteStream(downloadDirectory + fileName))];
+                        return [4, request.pipe(fs.createWriteStream(downloadDirectory + fileName))];
                     case 4:
                         _b.sent();
                         console.log("Stored artifact here: " + downloadDirectory + fileName);
                         _b.label = 5;
                     case 5:
                         _i++;
-                        return [3 /*break*/, 2];
-                    case 6: return [2 /*return*/];
+                        return [3, 2];
+                    case 6: return [2];
                 }
             });
         });
@@ -266,14 +264,14 @@ var TfsRestService = /** @class */ (function () {
                 switch (_d.label) {
                     case 0:
                         requestUrl = "distributedtask/queues";
-                        return [4 /*yield*/, WebRequest.json(requestUrl, this.options)];
+                        return [4, WebRequest.json(requestUrl, this.options)];
                     case 1:
                         result = _d.sent();
                         this.throwIfAuthenticationError(result);
                         for (_i = 0, _a = result.value; _i < _a.length; _i++) {
                             queue = _a[_i];
                             if (queue.name.toLowerCase() === buildQueue.toLowerCase()) {
-                                return [2 /*return*/, queue.id];
+                                return [2, queue.id];
                             }
                         }
                         console.error("No queue found with the name: " + buildQueue + ". Following Queues were found (Name (id)):");
@@ -293,10 +291,10 @@ var TfsRestService = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         requestUrl = "build/builds/" + buildId + "?api-version=2.0";
-                        return [4 /*yield*/, WebRequest.json(requestUrl, this.options)];
+                        return [4, WebRequest.json(requestUrl, this.options)];
                     case 1:
                         result = _a.sent();
-                        return [2 /*return*/, result.status === exports.BuildStateCompleted];
+                        return [2, result.status === exports.BuildStateCompleted];
                 }
             });
         });
@@ -308,10 +306,10 @@ var TfsRestService = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         requestUrl = "build/builds/" + buildId + "?api-version=2.0";
-                        return [4 /*yield*/, WebRequest.json(requestUrl, this.options)];
+                        return [4, WebRequest.json(requestUrl, this.options)];
                     case 1:
                         result = _a.sent();
-                        return [2 /*return*/, result.result === exports.BuildResultSucceeded];
+                        return [2, result.result === exports.BuildResultSucceeded];
                 }
             });
         });
@@ -323,14 +321,14 @@ var TfsRestService = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         requestUrl = "build/definitions?api-version=2.0&name=" + encodeURIComponent(buildDefinitionName);
-                        return [4 /*yield*/, WebRequest.json(requestUrl, this.options)];
+                        return [4, WebRequest.json(requestUrl, this.options)];
                     case 1:
                         result = _a.sent();
                         this.throwIfAuthenticationError(result);
                         if (result.count === 0) {
                             throw new Error("Did not find any build definition with this name: " + buildDefinitionName + "\n            - checked following url: " + this.options.baseUrl + requestUrl);
                         }
-                        return [2 /*return*/, result.value[0].id];
+                        return [2, result.value[0].id];
                 }
             });
         });
@@ -338,7 +336,6 @@ var TfsRestService = /** @class */ (function () {
     TfsRestService.prototype.handleValidationError = function (resultAsJson) {
         var validationResults = resultAsJson.ValidationResults;
         if (validationResults === undefined) {
-            // in case something else failed try fetch just a message:
             var errorMessage = resultAsJson.message;
             if (errorMessage !== undefined) {
                 console.error(errorMessage);
