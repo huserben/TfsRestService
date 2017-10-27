@@ -1,6 +1,6 @@
 {
   "name": "tfsrestservice",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Service which abstracts calls to the TFS/VSTS REST API and exposes the objects to the clients for further usage.",
   "main": "index.ts",
   "scripts": {
@@ -11,7 +11,9 @@
     "url": "git+https://github.com/huserben/TfsRestService.git"
   },
   "keywords": [
-    "TFS", "VSTS", "REST API"
+    "TFS",
+    "VSTS",
+    "REST API"
   ],
   "author": "Benj Huser",
   "license": "MIT",
