@@ -17,6 +17,7 @@
   ],
   "author": "Benj Huser",
   "license": "MIT",
+  "homepage": "https://github.com/huserben/TfsRestService#readme",
   "dependencies": {
     "@types/node": "^8.0.47"
   },

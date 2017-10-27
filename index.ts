@@ -1,6 +1,6 @@
-import WebRequest = require("web-request");
-import fs = require("fs");
-import url = require("url");
+import * as WebRequest from "web-request";
+import * as fs from "fs";
+import * as url from "url";
 
 export const TeamFoundationCollectionUri : string = "SYSTEM_TEAMFOUNDATIONCOLLECTIONURI";
 export const TeamProject : string = "SYSTEM_TEAMPROJECT";
