@@ -1,5 +1,5 @@
 {
-  "name": "@huserben/tfsrestservice",
+  "name": "tfsrestservice",
   "version": "1.0.0",
   "description": "Service which abstracts calls to the TFS/VSTS REST API and exposes the objects to the clients for further usage.",
   "main": "index.ts",
