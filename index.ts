@@ -1,4 +1,4 @@
-import * as WebRequest from "web-request";
+import WebRequest = require("web-request");
 import fs = require("fs");
 import url = require("url");
 
@@ -19,7 +19,6 @@ export const TfsRepositoryType : string = "TfsVersionControl";
 
 export const ApiUrl : string = "_apis";
 
-export const AuthenticationMethodDefaultCredentials : string = "Default Credentials";
 export const AuthenticationMethodOAuthToken : string = "OAuth Token";
 export const AuthenticationMethodBasicAuthentication : string = "Basic Authentication";
 export const AuthenticationMethodPersonalAccessToken : string = "Personal Access Token";
@@ -49,7 +48,10 @@ export interface ITfsRestService {
         buildParameters: string): Promise<string>;
     downloadArtifacts(buildId: string, downloadDirectory: string): Promise<void>;
     getQueueIdByName(buildQueue: string): Promise<number>;
-    waitForBuildsToFinish(triggeredBuilds: string[], failIfNotSuccessful: boolean): Promise<boolean>;
+    areBuildsFinished(triggeredBuilds: string[], failIfNotSuccessful: boolean): Promise<boolean>;
+    isBuildFinished(buildId: string): Promise<boolean>;
+    wasBuildSuccessful(buildId: string): Promise<boolean>;
+    getBuildDefinitionId(buildDefinitionName: string): Promise<string>;
 }
 
 // internally used interfaces for json objects returned by REST request.
@@ -140,7 +142,7 @@ export class TfsRestService implements  ITfsRestService {
     public async triggerBuild(
         buildDefinitionName: string,
         branch: string,
-        requestedFor: string,
+        requestedForUserID: string,
         sourceVersion: string,
         demands: string[],
         queueId: number,
@@ -153,12 +155,12 @@ export class TfsRestService implements  ITfsRestService {
             queueBuildBody += `, sourceBranch: \"${branch}\"`;
         }
 
-        if (requestedFor !== undefined) {
-            queueBuildBody += `, ${requestedFor}`;
+        if (requestedForUserID !== undefined && requestedForUserID !== "") {
+            queueBuildBody += `, requestedFor: { id: \"${requestedForUserID}\"}`;
         }
 
-        if (sourceVersion !== undefined) {
-            queueBuildBody += `, ${sourceVersion}`;
+        if (sourceVersion !== undefined && sourceVersion !== sourceVersion) {
+            queueBuildBody += `, sourceVersion: \"${sourceVersion}\"`;
         }
 
         if (queueId !== null && queueId !== undefined) {
@@ -192,7 +194,7 @@ export class TfsRestService implements  ITfsRestService {
         return triggeredBuildID;
     }
 
-    public async waitForBuildsToFinish(triggeredBuilds: string[], failIfNotSuccessful: boolean): Promise<boolean> {
+    public async areBuildsFinished(triggeredBuilds: string[], failIfNotSuccessful: boolean): Promise<boolean> {
         var result: boolean = true;
         for (let queuedBuildId of triggeredBuilds) {
             var buildFinished: boolean = await this.isBuildFinished(queuedBuildId);
@@ -287,7 +289,7 @@ export class TfsRestService implements  ITfsRestService {
         throw new Error(`Could not find any Queue with the name ${buildQueue}`);
     }
 
-    private async isBuildFinished(buildId: string): Promise<boolean> {
+    public async isBuildFinished(buildId: string): Promise<boolean> {
         var requestUrl: string = `build/builds/${buildId}?api-version=2.0`;
         var result: IBuild =
             await WebRequest.json<IBuild>(requestUrl, this.options);
@@ -295,7 +297,7 @@ export class TfsRestService implements  ITfsRestService {
         return result.status === BuildStateCompleted;
     }
 
-    private async wasBuildSuccessful(buildId: string): Promise<boolean> {
+    public async wasBuildSuccessful(buildId: string): Promise<boolean> {
         var requestUrl: string = `build/builds/${buildId}?api-version=2.0`;
         var result: IBuild =
             await WebRequest.json<IBuild>(requestUrl, this.options);
@@ -303,7 +305,7 @@ export class TfsRestService implements  ITfsRestService {
         return result.result === BuildResultSucceeded;
     }
 
-    private async getBuildDefinitionId(buildDefinitionName: string): Promise<string> {
+    public async getBuildDefinitionId(buildDefinitionName: string): Promise<string> {
         var requestUrl: string = `build/definitions?api-version=2.0&name=${encodeURIComponent(buildDefinitionName)}`;
 
         var result: ITfsGetResponse<IBuild> =

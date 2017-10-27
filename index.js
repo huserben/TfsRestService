@@ -22,7 +22,6 @@ exports.OAuthAccessToken = "SYSTEM_ACCESSTOKEN";
 exports.RepositoryType = "BUILD_REPOSITORY_PROVIDER";
 exports.TfsRepositoryType = "TfsVersionControl";
 exports.ApiUrl = "_apis";
-exports.AuthenticationMethodDefaultCredentials = "Default Credentials";
 exports.AuthenticationMethodOAuthToken = "OAuth Token";
 exports.AuthenticationMethodBasicAuthentication = "Basic Authentication";
 exports.AuthenticationMethodPersonalAccessToken = "Personal Access Token";
@@ -78,7 +77,7 @@ class TfsRestService {
             return result.value;
         });
     }
-    triggerBuild(buildDefinitionName, branch, requestedFor, sourceVersion, demands, queueId, buildParameters) {
+    triggerBuild(buildDefinitionName, branch, requestedForUserID, sourceVersion, demands, queueId, buildParameters) {
         return __awaiter(this, void 0, void 0, function* () {
             var buildId = yield this.getBuildDefinitionId(buildDefinitionName);
             var queueBuildUrl = "build/builds?api-version=2.0";
@@ -86,11 +85,11 @@ class TfsRestService {
             if (branch !== null) {
                 queueBuildBody += `, sourceBranch: \"${branch}\"`;
             }
-            if (requestedFor !== undefined) {
-                queueBuildBody += `, ${requestedFor}`;
+            if (requestedForUserID !== undefined && requestedForUserID !== "") {
+                queueBuildBody += `, requestedFor: { id: \"${requestedForUserID}\"}`;
             }
-            if (sourceVersion !== undefined) {
-                queueBuildBody += `, ${sourceVersion}`;
+            if (sourceVersion !== undefined && sourceVersion !== sourceVersion) {
+                queueBuildBody += `, sourceVersion: \"${sourceVersion}\"`;
             }
             if (queueId !== null && queueId !== undefined) {
                 queueBuildBody += `, queue: { id: ${queueId}}`;
@@ -115,7 +114,7 @@ class TfsRestService {
             return triggeredBuildID;
         });
     }
-    waitForBuildsToFinish(triggeredBuilds, failIfNotSuccessful) {
+    areBuildsFinished(triggeredBuilds, failIfNotSuccessful) {
         return __awaiter(this, void 0, void 0, function* () {
             var result = true;
             for (let queuedBuildId of triggeredBuilds) {
