@@ -65,7 +65,7 @@ var TfsRestService = (function () {
             case exports.AuthenticationMethodOAuthToken:
                 console.log("Using OAuth Access Token");
                 this.options = {
-                    baseUrl: baseUrl, auth: {
+                    auth: {
                         bearer: password
                     }
                 };
@@ -73,7 +73,7 @@ var TfsRestService = (function () {
             case exports.AuthenticationMethodBasicAuthentication:
                 console.log("Using Basic Authentication");
                 this.options = {
-                    baseUrl: baseUrl, auth: {
+                    auth: {
                         user: username,
                         password: password
                     }
@@ -82,7 +82,6 @@ var TfsRestService = (function () {
             case exports.AuthenticationMethodPersonalAccessToken:
                 console.log("Using Personal Access Token");
                 this.options = {
-                    baseUrl: baseUrl,
                     auth: {
                         user: "whatever",
                         password: password
@@ -95,6 +94,7 @@ var TfsRestService = (function () {
         this.options.headers = {
             "Content-Type": "application/json"
         };
+        this.options.baseUrl = baseUrl;
         this.options.agentOptions = { rejectUnauthorized: !ignoreSslError };
         this.options.encoding = "utf-8";
     };
@@ -368,4 +368,3 @@ var TfsRestService = (function () {
     return TfsRestService;
 }());
 exports.TfsRestService = TfsRestService;
-//# sourceMappingURL=index.js.map

@@ -2,31 +2,31 @@ import * as WebRequest from "web-request";
 import * as fs from "fs";
 import * as url from "url";
 
-export const TeamFoundationCollectionUri : string = "SYSTEM_TEAMFOUNDATIONCOLLECTIONURI";
-export const TeamProject : string = "SYSTEM_TEAMPROJECT";
+export const TeamFoundationCollectionUri: string = "SYSTEM_TEAMFOUNDATIONCOLLECTIONURI";
+export const TeamProject: string = "SYSTEM_TEAMPROJECT";
 
-export const RequestedForUsername : string = "BUILD_REQUESTEDFOR";
-export const RequestedForUserId : string = "BUILD_REQUESTEDFORID";
+export const RequestedForUsername: string = "BUILD_REQUESTEDFOR";
+export const RequestedForUserId: string = "BUILD_REQUESTEDFORID";
 
-export const SourceVersion : string = "BUILD_SOURCEVERSION";
-export const SourceBranch : string = "BUILD_SOURCEBRANCH";
-export const CurrentBuildDefinition : string = "BUILD_DEFINITIONNAME";
+export const SourceVersion: string = "BUILD_SOURCEVERSION";
+export const SourceBranch: string = "BUILD_SOURCEBRANCH";
+export const CurrentBuildDefinition: string = "BUILD_DEFINITIONNAME";
 
-export const OAuthAccessToken : string = "SYSTEM_ACCESSTOKEN";
+export const OAuthAccessToken: string = "SYSTEM_ACCESSTOKEN";
 
-export const RepositoryType : string = "BUILD_REPOSITORY_PROVIDER";
-export const TfsRepositoryType : string = "TfsVersionControl";
+export const RepositoryType: string = "BUILD_REPOSITORY_PROVIDER";
+export const TfsRepositoryType: string = "TfsVersionControl";
 
-export const ApiUrl : string = "_apis";
+export const ApiUrl: string = "_apis";
 
-export const AuthenticationMethodOAuthToken : string = "OAuth Token";
-export const AuthenticationMethodBasicAuthentication : string = "Basic Authentication";
-export const AuthenticationMethodPersonalAccessToken : string = "Personal Access Token";
+export const AuthenticationMethodOAuthToken: string = "OAuth Token";
+export const AuthenticationMethodBasicAuthentication: string = "Basic Authentication";
+export const AuthenticationMethodPersonalAccessToken: string = "Personal Access Token";
 
-export const BuildStateNotStarted : string = "notStarted";
-export const BuildStateInProgress : string = "inProgress";
-export const BuildStateCompleted : string = "completed";
-export const BuildResultSucceeded : string = "succeeded";
+export const BuildStateNotStarted: string = "notStarted";
+export const BuildStateInProgress: string = "inProgress";
+export const BuildStateCompleted: string = "completed";
+export const BuildResultSucceeded: string = "succeeded";
 
 export interface IBuild {
     name: string;
@@ -80,7 +80,7 @@ interface IValidationResult {
     message: string;
 }
 
-export class TfsRestService implements  ITfsRestService {
+export class TfsRestService implements ITfsRestService {
     options: WebRequest.RequestOptions;
 
     public initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, ignoreSslError: boolean): void {
@@ -90,7 +90,7 @@ export class TfsRestService implements  ITfsRestService {
             case AuthenticationMethodOAuthToken:
                 console.log("Using OAuth Access Token");
                 this.options = {
-                    baseUrl: baseUrl, auth: {
+                    auth: {
                         bearer: password
                     }
                 };
@@ -98,7 +98,7 @@ export class TfsRestService implements  ITfsRestService {
             case AuthenticationMethodBasicAuthentication:
                 console.log("Using Basic Authentication");
                 this.options = {
-                    baseUrl: baseUrl, auth: {
+                    auth: {
                         user: username,
                         password: password
                     }
@@ -109,7 +109,6 @@ export class TfsRestService implements  ITfsRestService {
                 console.log("Using Personal Access Token");
 
                 this.options = {
-                    baseUrl: baseUrl,
                     auth: {
                         user: "whatever",
                         password: password
@@ -123,6 +122,7 @@ export class TfsRestService implements  ITfsRestService {
         this.options.headers = {
             "Content-Type": "application/json"
         };
+        this.options.baseUrl = baseUrl;
         this.options.agentOptions = { rejectUnauthorized: !ignoreSslError };
         this.options.encoding = "utf-8";
     }
@@ -311,7 +311,7 @@ export class TfsRestService implements  ITfsRestService {
         var result: ITfsGetResponse<IBuild> =
             await WebRequest.json<ITfsGetResponse<IBuild>>(requestUrl, this.options);
 
-            this.throwIfAuthenticationError(result);
+        this.throwIfAuthenticationError(result);
 
         if (result.count === 0) {
             throw new Error(`Did not find any build definition with this name: ${buildDefinitionName}
