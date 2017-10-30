@@ -57,6 +57,8 @@ export interface ITfsRestService {
     isBuildFinished(buildId: string): Promise<boolean>;
     wasBuildSuccessful(buildId: string): Promise<boolean>;
     getBuildDefinitionId(buildDefinitionName: string): Promise<string>;
+    getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<ITestRun[]>;
+    getTestResults(testRun: ITestRun): Promise<ITestResult[]>;
 }
 
 export interface ITestRun {
