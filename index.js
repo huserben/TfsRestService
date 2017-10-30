@@ -427,3 +427,4 @@ var TfsRestService = (function () {
     return TfsRestService;
 }());
 exports.TfsRestService = TfsRestService;
+//# sourceMappingURL=index.js.map

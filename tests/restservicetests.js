@@ -56,3 +56,4 @@ describe("TFS Rest Service Tests", function () {
         assert.throws(function () { return subject.initialize("someFancyOtherMethod", "", "", "", false); }, Error);
     });
 });
+//# sourceMappingURL=restservicetests.js.map

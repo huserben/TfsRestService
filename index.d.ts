@@ -17,6 +17,8 @@ export declare const BuildStateNotStarted: string;
 export declare const BuildStateInProgress: string;
 export declare const BuildStateCompleted: string;
 export declare const BuildResultSucceeded: string;
+export declare const TestRunStateCompleted: string;
+export declare const TestRunOutcomePassed: string;
 export interface IBuild {
     name: string;
     id: string;
@@ -34,6 +36,24 @@ export interface ITfsRestService {
     wasBuildSuccessful(buildId: string): Promise<boolean>;
     getBuildDefinitionId(buildDefinitionName: string): Promise<string>;
 }
+export interface ITestRun {
+    id: number;
+    buildConfiguration: {
+        id: number;
+        buildDefinitionId: string;
+    };
+    runStatistics: [{
+        state: string;
+        outcome: string;
+    }];
+}
+export interface ITestResult {
+    state: string;
+    outcome: string;
+    durationInMs: number;
+    testCaseTitle: string;
+    startedDate: string;
+}
 export declare class TfsRestService implements ITfsRestService {
     options: WebRequest.RequestOptions;
     initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, ignoreSslError: boolean): void;
@@ -41,6 +61,8 @@ export declare class TfsRestService implements ITfsRestService {
     triggerBuild(buildDefinitionName: string, branch: string, requestedForUserID: string, sourceVersion: string, demands: string[], queueId: number, buildParameters: string): Promise<string>;
     areBuildsFinished(triggeredBuilds: string[], failIfNotSuccessful: boolean): Promise<boolean>;
     downloadArtifacts(buildId: string, downloadDirectory: string): Promise<void>;
+    getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<ITestRun[]>;
+    getTestResults(testRun: ITestRun): Promise<ITestResult[]>;
     getQueueIdByName(buildQueue: string): Promise<number>;
     isBuildFinished(buildId: string): Promise<boolean>;
     wasBuildSuccessful(buildId: string): Promise<boolean>;

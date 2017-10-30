@@ -63,3 +63,9 @@ Gets the id of the build definition which is specified by name as a parameter.
 
 ### getQueueIdByName(buildQueue: string): Promise<number\>
 Will try to get a Queue ID by a specified name. This is useful if you want to trigger a build on a specific Agent Queue.
+
+### getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<ITestRun[]\>
+Will get a list of all Test Runs which match the specified name. Will only get the specified number of runs, sorted by newest to oldest.  
+
+### getTestResults(testRun: ITestRun): Promise<ITestResult[]\>  
+Gets the Tests that were run as part of the specified test run.
