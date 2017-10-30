@@ -1,6 +1,7 @@
 import * as WebRequest from "web-request";
 import * as fs from "fs";
 import * as url from "url";
+import { List } from "linqts";
 
 export const TeamFoundationCollectionUri: string = "SYSTEM_TEAMFOUNDATIONCOLLECTIONURI";
 export const TeamProject: string = "SYSTEM_TEAMPROJECT";
@@ -28,6 +29,10 @@ export const BuildStateInProgress: string = "inProgress";
 export const BuildStateCompleted: string = "completed";
 export const BuildResultSucceeded: string = "succeeded";
 
+export const TestRunStateCompleted : string = "Completed";
+export const TestRunOutcomePassed : string = "Passed";
+
+/* Interfaces that are exported */
 export interface IBuild {
     name: string;
     id: string;
@@ -52,6 +57,26 @@ export interface ITfsRestService {
     isBuildFinished(buildId: string): Promise<boolean>;
     wasBuildSuccessful(buildId: string): Promise<boolean>;
     getBuildDefinitionId(buildDefinitionName: string): Promise<string>;
+}
+
+export interface ITestRun {
+    id: number;
+    buildConfiguration: {
+        id: number;
+        buildDefinitionId: string;
+    };
+    runStatistics: [{
+        state: string;
+        outcome: string;
+    }];
+}
+
+export interface ITestResult {
+    state: string;
+    outcome: string;
+    durationInMs: number;
+    testCaseTitle: string;
+    startedDate: string;
 }
 
 // internally used interfaces for json objects returned by REST request.
@@ -80,6 +105,14 @@ interface IValidationResult {
     message: string;
 }
 
+interface ITestRunSummary {
+    id: number;
+    name: string;
+    startedDate: string;
+    state: string;
+}
+
+/* Tfs Rest Service Implementation */
 export class TfsRestService implements ITfsRestService {
     options: WebRequest.RequestOptions;
 
@@ -267,6 +300,48 @@ export class TfsRestService implements ITfsRestService {
 
             console.log(`Stored artifact here: ${downloadDirectory}${fileName}`);
         }
+    }
+
+    public async getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<ITestRun[]> {
+        var testRunsUrl: string = `test/runs`;
+
+        var testRunSummaries: ITfsGetResponse<ITestRunSummary> =
+        await WebRequest.json<ITfsGetResponse<ITestRunSummary>>(testRunsUrl, this.options);
+        this.throwIfAuthenticationError(testRunSummaries);
+
+        var testRunsToReturn: ITestRun[] = [];
+
+        // reverse to fetch newest to oldest.
+        let testSummariesToGetResultsFor: ITestRunSummary[] = new List<ITestRunSummary>(testRunSummaries.value)
+            .Reverse()
+            .Where(x => x !== undefined && x.state.toLowerCase() === TestRunStateCompleted.toLowerCase()
+                && x.name === testRunName)
+            .ToArray();
+
+        for (let testSummary of testSummariesToGetResultsFor) {
+            var testRun: ITestRun = await WebRequest.json<ITestRun>(`${testRunsUrl}/${testSummary.id}`, this.options);
+
+            if (testRun.runStatistics[0].outcome.toLowerCase() === TestRunOutcomePassed.toLowerCase()) {
+                testRunsToReturn.push(testRun);
+
+                if (testRunsToReturn.length >= numberOfRunsToFetch) {
+                    break;
+                }
+            }
+        }
+
+        // reverse again to get the matching test runs orderd from oldest to newest.
+        return testRunsToReturn.reverse();
+    }
+
+    public async getTestResults(testRun: ITestRun): Promise<ITestResult[]> {
+        var requestUrl: string = `test/runs/${testRun.id}/results`;
+
+        var results: ITfsGetResponse<ITestResult> = await WebRequest.json<ITfsGetResponse<ITestResult>>(requestUrl, this.options);
+
+        this.throwIfAuthenticationError(results);
+
+        return results.value;
     }
 
     public async getQueueIdByName(buildQueue: string): Promise<number> {

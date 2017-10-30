@@ -38,6 +38,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var WebRequest = require("web-request");
 var fs = require("fs");
 var url = require("url");
+var linqts_1 = require("linqts");
 exports.TeamFoundationCollectionUri = "SYSTEM_TEAMFOUNDATIONCOLLECTIONURI";
 exports.TeamProject = "SYSTEM_TEAMPROJECT";
 exports.RequestedForUsername = "BUILD_REQUESTEDFOR";
@@ -56,6 +57,8 @@ exports.BuildStateNotStarted = "notStarted";
 exports.BuildStateInProgress = "inProgress";
 exports.BuildStateCompleted = "completed";
 exports.BuildResultSucceeded = "succeeded";
+exports.TestRunStateCompleted = "Completed";
+exports.TestRunOutcomePassed = "Passed";
 var TfsRestService = (function () {
     function TfsRestService() {
     }
@@ -253,6 +256,62 @@ var TfsRestService = (function () {
                         _i++;
                         return [3, 2];
                     case 6: return [2];
+                }
+            });
+        });
+    };
+    TfsRestService.prototype.getTestRuns = function (testRunName, numberOfRunsToFetch) {
+        return __awaiter(this, void 0, void 0, function () {
+            var testRunsUrl, testRunSummaries, testRunsToReturn, testSummariesToGetResultsFor, _i, testSummariesToGetResultsFor_1, testSummary, testRun;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        testRunsUrl = "test/runs";
+                        return [4, WebRequest.json(testRunsUrl, this.options)];
+                    case 1:
+                        testRunSummaries = _a.sent();
+                        this.throwIfAuthenticationError(testRunSummaries);
+                        testRunsToReturn = [];
+                        testSummariesToGetResultsFor = new linqts_1.List(testRunSummaries.value)
+                            .Reverse()
+                            .Where(function (x) { return x !== undefined && x.state.toLowerCase() === exports.TestRunStateCompleted.toLowerCase()
+                            && x.name === testRunName; })
+                            .ToArray();
+                        _i = 0, testSummariesToGetResultsFor_1 = testSummariesToGetResultsFor;
+                        _a.label = 2;
+                    case 2:
+                        if (!(_i < testSummariesToGetResultsFor_1.length)) return [3, 5];
+                        testSummary = testSummariesToGetResultsFor_1[_i];
+                        return [4, WebRequest.json(testRunsUrl + "/" + testSummary.id, this.options)];
+                    case 3:
+                        testRun = _a.sent();
+                        if (testRun.runStatistics[0].outcome.toLowerCase() === exports.TestRunOutcomePassed.toLowerCase()) {
+                            testRunsToReturn.push(testRun);
+                            if (testRunsToReturn.length >= numberOfRunsToFetch) {
+                                return [3, 5];
+                            }
+                        }
+                        _a.label = 4;
+                    case 4:
+                        _i++;
+                        return [3, 2];
+                    case 5: return [2, testRunsToReturn.reverse()];
+                }
+            });
+        });
+    };
+    TfsRestService.prototype.getTestResults = function (testRun) {
+        return __awaiter(this, void 0, void 0, function () {
+            var requestUrl, results;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        requestUrl = "test/runs/" + testRun.id + "/results";
+                        return [4, WebRequest.json(requestUrl, this.options)];
+                    case 1:
+                        results = _a.sent();
+                        this.throwIfAuthenticationError(results);
+                        return [2, results.value];
                 }
             });
         });
