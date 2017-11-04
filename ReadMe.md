@@ -58,6 +58,9 @@ Will check if a single build is finished or not.
 ### wasBuildSuccessful(buildId: string): Promise<boolean\>
 Checks whether the specified build was successful or not.
 
+### getAssociatedChanges(build: IBuild): Promise<IChange[]\>
+Returns the associated changes of the specified build.
+
 ### getBuildDefinitionId(buildDefinitionName: string): Promise<string\>
 Gets the id of the build definition which is specified by name as a parameter.
 
