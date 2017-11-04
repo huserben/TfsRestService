@@ -37,6 +37,7 @@ export interface ITfsRestService {
     getBuildDefinitionId(buildDefinitionName: string): Promise<string>;
     getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<ITestRun[]>;
     getTestResults(testRun: ITestRun): Promise<ITestResult[]>;
+    getAssociatedChanges(build: IBuild): Promise<IChange[]>;
 }
 export interface ITestRun {
     id: number;
@@ -56,6 +57,16 @@ export interface ITestResult {
     testCaseTitle: string;
     startedDate: string;
 }
+export interface IChange {
+    id: string;
+    message: string;
+    type: string;
+    author: {
+        id: string;
+        displayName: string;
+    };
+    location: string;
+}
 export declare class TfsRestService implements ITfsRestService {
     options: WebRequest.RequestOptions;
     initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, ignoreSslError: boolean): void;
@@ -69,6 +80,7 @@ export declare class TfsRestService implements ITfsRestService {
     isBuildFinished(buildId: string): Promise<boolean>;
     wasBuildSuccessful(buildId: string): Promise<boolean>;
     getBuildDefinitionId(buildDefinitionName: string): Promise<string>;
+    getAssociatedChanges(build: IBuild): Promise<IChange[]>;
     private handleValidationError(resultAsJson);
     private throwIfAuthenticationError<T>(result);
 }

@@ -392,6 +392,22 @@ var TfsRestService = (function () {
             });
         });
     };
+    TfsRestService.prototype.getAssociatedChanges = function (build) {
+        return __awaiter(this, void 0, void 0, function () {
+            var requestUrl, result;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        requestUrl = "build/builds/" + build.id + "/changes?api-version=2.0";
+                        return [4, WebRequest.json(requestUrl, this.options)];
+                    case 1:
+                        result = _a.sent();
+                        this.throwIfAuthenticationError(result);
+                        return [2, result.value];
+                }
+            });
+        });
+    };
     TfsRestService.prototype.handleValidationError = function (resultAsJson) {
         var validationResults = resultAsJson.ValidationResults;
         if (validationResults === undefined) {
@@ -427,4 +443,3 @@ var TfsRestService = (function () {
     return TfsRestService;
 }());
 exports.TfsRestService = TfsRestService;
-//# sourceMappingURL=index.js.map

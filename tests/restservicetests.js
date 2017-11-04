@@ -1,17 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var assert = require("assert");
-var sinon = require("sinon");
 var index = require("../index");
 describe("TFS Rest Service Tests", function () {
     var subject;
-    var sandbox;
     beforeEach(function () {
-        sandbox = sinon.sandbox.create();
         subject = new index.TfsRestService();
-    });
-    afterEach(function () {
-        sandbox.restore();
     });
     it("sets default options when initializing", function () {
         var ServerUrl = "https://www.myTfsServer.com:8080";
@@ -56,4 +50,3 @@ describe("TFS Rest Service Tests", function () {
         assert.throws(function () { return subject.initialize("someFancyOtherMethod", "", "", "", false); }, Error);
     });
 });
-//# sourceMappingURL=restservicetests.js.map

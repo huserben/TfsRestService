@@ -29,8 +29,8 @@ export const BuildStateInProgress: string = "inProgress";
 export const BuildStateCompleted: string = "completed";
 export const BuildResultSucceeded: string = "succeeded";
 
-export const TestRunStateCompleted : string = "Completed";
-export const TestRunOutcomePassed : string = "Passed";
+export const TestRunStateCompleted: string = "Completed";
+export const TestRunOutcomePassed: string = "Passed";
 
 /* Interfaces that are exported */
 export interface IBuild {
@@ -59,6 +59,7 @@ export interface ITfsRestService {
     getBuildDefinitionId(buildDefinitionName: string): Promise<string>;
     getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<ITestRun[]>;
     getTestResults(testRun: ITestRun): Promise<ITestResult[]>;
+    getAssociatedChanges(build: IBuild): Promise<IChange[]>;
 }
 
 export interface ITestRun {
@@ -79,6 +80,17 @@ export interface ITestResult {
     durationInMs: number;
     testCaseTitle: string;
     startedDate: string;
+}
+
+export interface IChange {
+    id: string;
+    message: string;
+    type: string;
+    author: {
+        id: string;
+        displayName: string;
+    };
+    location: string;
 }
 
 // internally used interfaces for json objects returned by REST request.
@@ -308,7 +320,7 @@ export class TfsRestService implements ITfsRestService {
         var testRunsUrl: string = `test/runs`;
 
         var testRunSummaries: ITfsGetResponse<ITestRunSummary> =
-        await WebRequest.json<ITfsGetResponse<ITestRunSummary>>(testRunsUrl, this.options);
+            await WebRequest.json<ITfsGetResponse<ITestRunSummary>>(testRunsUrl, this.options);
         this.throwIfAuthenticationError(testRunSummaries);
 
         var testRunsToReturn: ITestRun[] = [];
@@ -396,6 +408,17 @@ export class TfsRestService implements ITfsRestService {
         }
 
         return result.value[0].id;
+    }
+
+    public async getAssociatedChanges(build: IBuild): Promise<IChange[]> {
+        var requestUrl: string = `build/builds/${build.id}/changes?api-version=2.0`;
+
+        var result: ITfsGetResponse<IChange> =
+            await WebRequest.json<ITfsGetResponse<IChange>>(requestUrl, this.options);
+
+        this.throwIfAuthenticationError(result);
+
+        return result.value;
     }
 
     private handleValidationError(resultAsJson: any): void {
