@@ -1,6 +1,6 @@
 {
   "name": "tfsrestservice",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Service which abstracts calls to the TFS/VSTS REST API and exposes the objects to the clients for further usage.",
   "main": "index.js",
   "scripts": {
