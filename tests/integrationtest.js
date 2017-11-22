@@ -39,7 +39,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var index = require("../index");
 describe.skip("Testing newly implemented functionality", function () {
     var PAT = "sww3otrtvfaqi4sqcqqjceq23lxgvlyjfoftqox7272qc3vxyi2q";
-    var tfsServer = "https://benjsawesometfstest.visualstudio.com/DefaultCollection/TfsExtensions";
+    var tfsServer = "https://benjsawesometfstest.visualstudio.com/DefaultCollection/Build Test";
     it("get latest failed build and associated changes", function () { return __awaiter(_this, void 0, void 0, function () {
         var tfsRestService, builds, build, associatedChanges;
         return __generator(this, function (_a) {
@@ -47,7 +47,7 @@ describe.skip("Testing newly implemented functionality", function () {
                 case 0:
                     tfsRestService = new index.TfsRestService();
                     tfsRestService.initialize(index.AuthenticationMethodPersonalAccessToken, "", PAT, tfsServer, false);
-                    return [4, tfsRestService.getBuildsByStatus("TFS Rest Service CI", "")];
+                    return [4, tfsRestService.getBuildsByStatus("CI Test", "")];
                 case 1:
                     builds = _a.sent();
                     build = builds[0];
@@ -60,3 +60,4 @@ describe.skip("Testing newly implemented functionality", function () {
         });
     }); });
 });
+//# sourceMappingURL=integrationtest.js.map

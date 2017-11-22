@@ -214,7 +214,7 @@ export class TfsRestService implements ITfsRestService {
             queueBuildBody += `, queue: { id: ${queueId}}`;
         }
 
-        if (demands !== null) {
+        if (demands !== null && demands.length > 0) {
             queueBuildBody += `, demands: [`;
             demands.forEach(demand => queueBuildBody += `\"${demand}\",`);
             queueBuildBody += `]`;

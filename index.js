@@ -140,7 +140,7 @@ var TfsRestService = (function () {
                         if (queueId !== null && queueId !== undefined) {
                             queueBuildBody += ", queue: { id: " + queueId + "}";
                         }
-                        if (demands !== null) {
+                        if (demands !== null && demands.length > 0) {
                             queueBuildBody += ", demands: [";
                             demands.forEach(function (demand) { return queueBuildBody += "\"" + demand + "\","; });
                             queueBuildBody += "]";
@@ -443,3 +443,4 @@ var TfsRestService = (function () {
     return TfsRestService;
 }());
 exports.TfsRestService = TfsRestService;
+//# sourceMappingURL=index.js.map
