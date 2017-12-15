@@ -134,7 +134,7 @@ var TfsRestService = (function () {
                         if (requestedForUserID !== undefined && requestedForUserID !== "") {
                             queueBuildBody += ", requestedFor: { id: \"" + requestedForUserID + "\"}";
                         }
-                        if (sourceVersion !== undefined && sourceVersion !== sourceVersion) {
+                        if (sourceVersion !== undefined && sourceVersion !== "") {
                             queueBuildBody += ", sourceVersion: \"" + sourceVersion + "\"";
                         }
                         if (queueId !== null && queueId !== undefined) {
@@ -443,4 +443,3 @@ var TfsRestService = (function () {
     return TfsRestService;
 }());
 exports.TfsRestService = TfsRestService;
-//# sourceMappingURL=index.js.map

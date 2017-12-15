@@ -206,7 +206,7 @@ export class TfsRestService implements ITfsRestService {
             queueBuildBody += `, requestedFor: { id: \"${requestedForUserID}\"}`;
         }
 
-        if (sourceVersion !== undefined && sourceVersion !== sourceVersion) {
+        if (sourceVersion !== undefined && sourceVersion !== "") {
             queueBuildBody += `, sourceVersion: \"${sourceVersion}\"`;
         }
 
