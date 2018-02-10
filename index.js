@@ -120,37 +120,39 @@ var TfsRestService = (function () {
     };
     TfsRestService.prototype.triggerBuild = function (buildDefinitionName, branch, requestedForUserID, sourceVersion, demands, queueId, buildParameters) {
         return __awaiter(this, void 0, void 0, function () {
-            var buildId, queueBuildUrl, queueBuildBody, result, resultAsJson, triggeredBuildID;
+            var buildId, queueBuildUrl, queueBuildBody, escapedBuildBody, splittedBody, result, resultAsJson, triggeredBuildID;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4, this.getBuildDefinitionId(buildDefinitionName)];
                     case 1:
                         buildId = _a.sent();
                         queueBuildUrl = "build/builds?api-version=2.0";
-                        queueBuildBody = "{ definition: { id: " + buildId + " }";
+                        queueBuildBody = new QueueBuildBody(parseInt(buildId, 10));
                         if (branch !== null) {
-                            queueBuildBody += ", sourceBranch: \"" + branch + "\"";
+                            queueBuildBody.sourceBranch = branch;
                         }
                         if (requestedForUserID !== undefined && requestedForUserID !== "") {
-                            queueBuildBody += ", requestedFor: { id: \"" + requestedForUserID + "\"}";
+                            queueBuildBody.requestedFor = { id: requestedForUserID };
                         }
                         if (sourceVersion !== undefined && sourceVersion !== "") {
-                            queueBuildBody += ", sourceVersion: \"" + sourceVersion + "\"";
+                            queueBuildBody.sourceVersion = sourceVersion;
                         }
                         if (queueId !== null && queueId !== undefined) {
-                            queueBuildBody += ", queue: { id: " + queueId + "}";
+                            queueBuildBody.queue = { id: queueId };
                         }
                         if (demands !== null && demands.length > 0) {
-                            queueBuildBody += ", demands: [";
-                            demands.forEach(function (demand) { return queueBuildBody += "\"" + demand + "\","; });
-                            queueBuildBody += "]";
+                            queueBuildBody.demands = [];
+                            demands.forEach(function (demand) { return queueBuildBody.demands.push(demand); });
                         }
+                        escapedBuildBody = JSON.stringify(queueBuildBody);
                         if (buildParameters !== null) {
-                            queueBuildBody += ", parameters: \"{" + buildParameters + "}\"";
+                            splittedBody = escapedBuildBody.split("");
+                            splittedBody.splice(splittedBody.lastIndexOf("}"), 1, ", parameters: \"{" + buildParameters + "}\"");
+                            escapedBuildBody = splittedBody.join("");
                         }
-                        queueBuildBody += "}";
                         console.log("Queue new Build for definition " + buildDefinitionName);
-                        return [4, WebRequest.post(queueBuildUrl, this.options, queueBuildBody)];
+                        console.log("Request Body: " + escapedBuildBody);
+                        return [4, WebRequest.post(queueBuildUrl, this.options, escapedBuildBody)];
                     case 2:
                         result = _a.sent();
                         resultAsJson = JSON.parse(result.content);
@@ -443,3 +445,11 @@ var TfsRestService = (function () {
     return TfsRestService;
 }());
 exports.TfsRestService = TfsRestService;
+var QueueBuildBody = (function () {
+    function QueueBuildBody(id) {
+        this.definition = {
+            id: id
+        };
+    }
+    return QueueBuildBody;
+}());

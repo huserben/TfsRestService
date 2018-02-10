@@ -92,7 +92,6 @@ export interface IChange {
     };
     location: string;
 }
-
 // internally used interfaces for json objects returned by REST request.
 interface ITfsGetResponse<T> {
     count: number;
@@ -124,6 +123,21 @@ interface ITestRunSummary {
     name: string;
     startedDate: string;
     state: string;
+}
+
+interface IQueueBuildBody {
+    definition: {
+        id: number
+    };
+    sourceBranch: string;
+    requestedFor: {
+        id: string
+    };
+    sourceVersion: string;
+    queue: {
+        id: number
+    };
+    demands: string[];
 }
 
 /* Tfs Rest Service Implementation */
@@ -197,38 +211,43 @@ export class TfsRestService implements ITfsRestService {
         var buildId: string = await this.getBuildDefinitionId(buildDefinitionName);
         var queueBuildUrl: string = "build/builds?api-version=2.0";
 
-        var queueBuildBody: string = `{ definition: { id: ${buildId} }`;
+        var queueBuildBody: IQueueBuildBody = new QueueBuildBody(parseInt(buildId, 10));
+
         if (branch !== null) {
-            queueBuildBody += `, sourceBranch: \"${branch}\"`;
+            queueBuildBody.sourceBranch = branch;
         }
 
         if (requestedForUserID !== undefined && requestedForUserID !== "") {
-            queueBuildBody += `, requestedFor: { id: \"${requestedForUserID}\"}`;
+            queueBuildBody.requestedFor = { id: requestedForUserID };
         }
 
         if (sourceVersion !== undefined && sourceVersion !== "") {
-            queueBuildBody += `, sourceVersion: \"${sourceVersion}\"`;
+            queueBuildBody.sourceVersion = sourceVersion;
         }
 
         if (queueId !== null && queueId !== undefined) {
-            queueBuildBody += `, queue: { id: ${queueId}}`;
+            queueBuildBody.queue = { id: queueId };
         }
 
         if (demands !== null && demands.length > 0) {
-            queueBuildBody += `, demands: [`;
-            demands.forEach(demand => queueBuildBody += `\"${demand}\",`);
-            queueBuildBody += `]`;
+            queueBuildBody.demands = [];
+            demands.forEach(demand => queueBuildBody.demands.push(demand));
         }
 
+        var escapedBuildBody: string = JSON.stringify(queueBuildBody);
+
+        // parameters should not be escaped like the rest due to the special syntax...
         if (buildParameters !== null) {
-            queueBuildBody += `, parameters: \"{${buildParameters}}\"`;
+            // remove last "}" and instead add the parameter attribute
+            var splittedBody : string[] = escapedBuildBody.split("");
+            splittedBody.splice(splittedBody.lastIndexOf("}"), 1, `, parameters: \"{${buildParameters}}\"`);
+            escapedBuildBody = splittedBody.join("");
         }
-
-        queueBuildBody += "}";
 
         console.log(`Queue new Build for definition ${buildDefinitionName}`);
+        console.log(`Request Body: ${escapedBuildBody}`);
 
-        var result: WebRequest.Response<string> = await WebRequest.post(queueBuildUrl, this.options, queueBuildBody);
+        var result: WebRequest.Response<string> = await WebRequest.post(queueBuildUrl, this.options, escapedBuildBody);
 
         var resultAsJson: any = JSON.parse(result.content);
         var triggeredBuildID: string = resultAsJson.id;
@@ -455,4 +474,20 @@ export class TfsRestService implements ITfsRestService {
             throw new Error(`Authentication with TFS Server failed. Please check your settings.`);
         }
     }
+}
+
+class QueueBuildBody implements IQueueBuildBody {
+
+    constructor(id: number) {
+        this.definition = {
+            id: id
+        };
+    }
+
+    definition: { id: number; };
+    sourceBranch: string;
+    requestedFor: { id: string; };
+    sourceVersion: string;
+    queue: { id: number; };
+    demands: string[];
 }
