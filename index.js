@@ -204,7 +204,7 @@ var TfsRestService = (function () {
     };
     TfsRestService.prototype.downloadArtifacts = function (buildId, downloadDirectory) {
         return __awaiter(this, void 0, void 0, function () {
-            var requestUrl, result, _i, _a, artifact, fileFormat, fileName, index, request;
+            var requestUrl, result, _i, _a, artifact, fileFormat, fileName, index, fileRequestOptions, request;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -241,12 +241,15 @@ var TfsRestService = (function () {
                             fileName = "" + artifact.name + index + "." + fileFormat;
                             index++;
                         }
-                        this.options.baseUrl = "";
-                        this.options.headers = {
+                        fileRequestOptions = {};
+                        fileRequestOptions.auth = this.options.auth;
+                        fileRequestOptions.baseUrl = "";
+                        fileRequestOptions.agentOptions = { rejectUnauthorized: this.options.agentOptions.rejectUnauthorized };
+                        fileRequestOptions.headers = {
                             "Content-Type": "application/" + fileFormat
                         };
-                        this.options.encoding = null;
-                        return [4, WebRequest.stream(artifact.resource.downloadUrl, this.options)];
+                        fileRequestOptions.encoding = null;
+                        return [4, WebRequest.stream(artifact.resource.downloadUrl, fileRequestOptions)];
                     case 3:
                         request = _b.sent();
                         return [4, request.pipe(fs.createWriteStream(downloadDirectory + fileName))];

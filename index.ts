@@ -239,7 +239,7 @@ export class TfsRestService implements ITfsRestService {
         // parameters should not be escaped like the rest due to the special syntax...
         if (buildParameters !== null) {
             // remove last "}" and instead add the parameter attribute
-            var splittedBody : string[] = escapedBuildBody.split("");
+            var splittedBody: string[] = escapedBuildBody.split("");
             splittedBody.splice(splittedBody.lastIndexOf("}"), 1, `, parameters: \"{${buildParameters}}\"`);
             escapedBuildBody = splittedBody.join("");
         }
@@ -322,13 +322,16 @@ export class TfsRestService implements ITfsRestService {
                 index++;
             }
 
-            this.options.baseUrl = "";
-            this.options.headers = {
+            var fileRequestOptions: WebRequest.RequestOptions = { };
+            fileRequestOptions.auth = this.options.auth;
+            fileRequestOptions.baseUrl = "";
+            fileRequestOptions.agentOptions = { rejectUnauthorized: this.options.agentOptions.rejectUnauthorized };
+            fileRequestOptions.headers = {
                 "Content-Type": `application/${fileFormat}`
             };
-            this.options.encoding = null;
+            fileRequestOptions.encoding = null;
 
-            var request: WebRequest.Request<void> = await WebRequest.stream(artifact.resource.downloadUrl, this.options);
+            var request: WebRequest.Request<void> = await WebRequest.stream(artifact.resource.downloadUrl, fileRequestOptions);
             await request.pipe(fs.createWriteStream(downloadDirectory + fileName));
 
             console.log(`Stored artifact here: ${downloadDirectory}${fileName}`);
