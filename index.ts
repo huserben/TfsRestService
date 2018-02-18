@@ -111,6 +111,7 @@ interface IArtifact {
 
 interface IArtifactResource {
     downloadUrl: string;
+    type: string;
 }
 
 interface IValidationResult {
@@ -304,6 +305,11 @@ export class TfsRestService implements ITfsRestService {
         console.log(`Found ${result.count} artifact(s)`);
 
         for (let artifact of result.value) {
+            if (artifact.resource.type !== "Container"){
+                console.log(`Cannot download artifact ${artifact.name}. Only Containers are supported (type is \"${artifact.resource.type}\"`);
+                continue;
+            }
+
             console.log(`Downloading artifact ${artifact.name}...`);
 
             var fileFormat: any = url.parse(artifact.resource.downloadUrl, true).query.$format;

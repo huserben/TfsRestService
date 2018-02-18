@@ -229,6 +229,10 @@ var TfsRestService = (function () {
                     case 2:
                         if (!(_i < _a.length)) return [3, 6];
                         artifact = _a[_i];
+                        if (artifact.resource.type !== "Container") {
+                            console.log("Cannot download artifact " + artifact.name + ". Only Containers are supported (type is \"" + artifact.resource.type + "\"");
+                            return [3, 5];
+                        }
                         console.log("Downloading artifact " + artifact.name + "...");
                         fileFormat = url.parse(artifact.resource.downloadUrl, true).query.$format;
                         if (fileFormat === null || fileFormat === undefined) {
