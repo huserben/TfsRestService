@@ -139,6 +139,8 @@ interface IQueueBuildBody {
         id: number
     };
     demands: string[];
+
+    formatBuildParameters(buildParmeters: string): string;
 }
 
 /* Tfs Rest Service Implementation */
@@ -241,7 +243,9 @@ export class TfsRestService implements ITfsRestService {
         if (buildParameters !== null) {
             // remove last "}" and instead add the parameter attribute
             var splittedBody: string[] = escapedBuildBody.split("");
-            splittedBody.splice(splittedBody.lastIndexOf("}"), 1, `, parameters: \"{${buildParameters}}\"`);
+            var formatBuildParameters : string = queueBuildBody.formatBuildParameters(buildParameters);
+
+            splittedBody.splice(splittedBody.lastIndexOf("}"), 1, `, ${formatBuildParameters}}`);
             escapedBuildBody = splittedBody.join("");
         }
 
@@ -512,4 +516,44 @@ class QueueBuildBody implements IQueueBuildBody {
     sourceVersion: string;
     queue: { id: number; };
     demands: string[];
+
+    formatBuildParameters(buildParameters: string): string {
+        var buildParameterString : string = "";
+
+        var keyValuePairs: string[] = buildParameters.split(",");
+        keyValuePairs.forEach(kvp => {
+            var splittedKvp : string[] = kvp.split(/:(.+)/);
+            var key : string = this.cleanValue(splittedKvp[0]);
+            var value: string = this.cleanValue(splittedKvp[1]);
+
+            console.log(`Found parameter ${key} with value: ${value}`);
+
+            buildParameterString += `${this.escapeParametersForRequestBody(key)}: ${this.escapeParametersForRequestBody(value)},`;
+        });
+
+        if (buildParameterString.endsWith(",")) {
+            buildParameterString = buildParameterString.substr(0, buildParameterString.length - 1);
+        }
+
+        return `\"parameters\": \"{${buildParameterString}}\"`;
+    }
+
+    cleanValue(value: string): string {
+        value = value.trim();
+
+        if (value.startsWith("\\\"") && value.endsWith("\\\"")) {
+            value = value.substr(2, value.length - 4);
+        }
+
+        return value;
+    }
+
+    // the parameters have to be escaped specially because they need some special syntax that is (partly) double escaped
+    escapeParametersForRequestBody(value: string): string {
+        var escapedValue : string = JSON.stringify(value);
+        escapedValue = escapedValue.substr(1, escapedValue.length - 2);
+        var doubleEscapedValue : string = JSON.stringify(escapedValue);
+        doubleEscapedValue = doubleEscapedValue.substr(1, doubleEscapedValue.length - 2);
+        return `\\\"${doubleEscapedValue}\\\"`;
+    }
 }

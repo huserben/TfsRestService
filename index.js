@@ -120,7 +120,7 @@ var TfsRestService = (function () {
     };
     TfsRestService.prototype.triggerBuild = function (buildDefinitionName, branch, requestedForUserID, sourceVersion, demands, queueId, buildParameters) {
         return __awaiter(this, void 0, void 0, function () {
-            var buildId, queueBuildUrl, queueBuildBody, escapedBuildBody, splittedBody, result, responseAsJson, triggeredBuildID, validationResults;
+            var buildId, queueBuildUrl, queueBuildBody, escapedBuildBody, splittedBody, formatBuildParameters, result, responseAsJson, triggeredBuildID, validationResults;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4, this.getBuildDefinitionId(buildDefinitionName)];
@@ -147,7 +147,8 @@ var TfsRestService = (function () {
                         escapedBuildBody = JSON.stringify(queueBuildBody);
                         if (buildParameters !== null) {
                             splittedBody = escapedBuildBody.split("");
-                            splittedBody.splice(splittedBody.lastIndexOf("}"), 1, ", parameters: \"{" + buildParameters + "}\"");
+                            formatBuildParameters = queueBuildBody.formatBuildParameters(buildParameters);
+                            splittedBody.splice(splittedBody.lastIndexOf("}"), 1, ", " + formatBuildParameters + "}");
                             escapedBuildBody = splittedBody.join("");
                         }
                         console.log("Queue new Build for definition " + buildDefinitionName);
@@ -470,6 +471,35 @@ var QueueBuildBody = (function () {
             id: id
         };
     }
+    QueueBuildBody.prototype.formatBuildParameters = function (buildParameters) {
+        var _this = this;
+        var buildParameterString = "";
+        var keyValuePairs = buildParameters.split(",");
+        keyValuePairs.forEach(function (kvp) {
+            var splittedKvp = kvp.split(/:(.+)/);
+            var key = _this.cleanValue(splittedKvp[0]);
+            var value = _this.cleanValue(splittedKvp[1]);
+            console.log("Found parameter " + key + " with value: " + value);
+            buildParameterString += _this.escapeParametersForRequestBody(key) + ": " + _this.escapeParametersForRequestBody(value) + ",";
+        });
+        if (buildParameterString.endsWith(",")) {
+            buildParameterString = buildParameterString.substr(0, buildParameterString.length - 1);
+        }
+        return "\"parameters\": \"{" + buildParameterString + "}\"";
+    };
+    QueueBuildBody.prototype.cleanValue = function (value) {
+        value = value.trim();
+        if (value.startsWith("\\\"") && value.endsWith("\\\"")) {
+            value = value.substr(2, value.length - 4);
+        }
+        return value;
+    };
+    QueueBuildBody.prototype.escapeParametersForRequestBody = function (value) {
+        var escapedValue = JSON.stringify(value);
+        escapedValue = escapedValue.substr(1, escapedValue.length - 2);
+        var doubleEscapedValue = JSON.stringify(escapedValue);
+        doubleEscapedValue = doubleEscapedValue.substr(1, doubleEscapedValue.length - 2);
+        return "\\\"" + doubleEscapedValue + "\\\"";
+    };
     return QueueBuildBody;
 }());
-//# sourceMappingURL=index.js.map
