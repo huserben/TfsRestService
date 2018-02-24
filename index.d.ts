@@ -81,6 +81,7 @@ export declare class TfsRestService implements ITfsRestService {
     wasBuildSuccessful(buildId: string): Promise<boolean>;
     getBuildDefinitionId(buildDefinitionName: string): Promise<string>;
     getAssociatedChanges(build: IBuild): Promise<IChange[]>;
-    private handleValidationError(resultAsJson);
+    private handleFailedQueueRequest(responseAsJson);
+    private logValidationResults(validationResults);
     private throwIfAuthenticationError<T>(result);
 }

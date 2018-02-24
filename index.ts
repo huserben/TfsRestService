@@ -210,7 +210,7 @@ export class TfsRestService implements ITfsRestService {
         queueId: number,
         buildParameters: string): Promise<string> {
         var buildId: string = await this.getBuildDefinitionId(buildDefinitionName);
-        var queueBuildUrl: string = "build/builds?api-version=2.0";
+        var queueBuildUrl: string = "build/builds?api-version=2.0&ignoreWarnings=true";
 
         var queueBuildBody: IQueueBuildBody = new QueueBuildBody(parseInt(buildId, 10));
 
@@ -250,13 +250,19 @@ export class TfsRestService implements ITfsRestService {
 
         var result: WebRequest.Response<string> = await WebRequest.post(queueBuildUrl, this.options, escapedBuildBody);
 
-        var resultAsJson: any = JSON.parse(result.content);
-        var triggeredBuildID: string = resultAsJson.id;
+        var responseAsJson: any = JSON.parse(result.content);
+        var triggeredBuildID: string = responseAsJson.id;
 
         // if we are not able to fetch the expected JSON it means something went wrong and we got back some exception from TFS.
         if (triggeredBuildID === undefined) {
-            this.handleValidationError(resultAsJson);
+            this.handleFailedQueueRequest(responseAsJson);
+        } else {
+            var validationResults: IValidationResult[] = responseAsJson.validationResults;
+            if (validationResults !== undefined) {
+                this.logValidationResults(validationResults);
+            }
         }
+
 
         return triggeredBuildID;
     }
@@ -356,7 +362,8 @@ export class TfsRestService implements ITfsRestService {
         // reverse to fetch newest to oldest.
         let testSummariesToGetResultsFor: ITestRunSummary[] = new List<ITestRunSummary>(testRunSummaries.value)
             .Reverse()
-            .Where(x => x !== undefined && x.name === testRunName)
+            .Where(x => x !== undefined && x.state.toLowerCase() === TestRunStateCompleted.toLowerCase()
+                && x.name === testRunName)
             .ToArray();
 
         for (let testSummary of testSummariesToGetResultsFor) {
@@ -446,29 +453,38 @@ export class TfsRestService implements ITfsRestService {
         return result.value;
     }
 
-    private handleValidationError(resultAsJson: any): void {
-        var validationResults: IValidationResult[] = resultAsJson.ValidationResults;
+    private handleFailedQueueRequest(responseAsJson: any): void {
+        var validationResults: IValidationResult[] = responseAsJson.ValidationResults;
         if (validationResults === undefined) {
             // in case something else failed try fetch just a message:
-            var errorMessage: string = resultAsJson.message;
+            var errorMessage: string = responseAsJson.message;
 
             if (errorMessage !== undefined) {
                 console.error(errorMessage);
             } else {
                 console.error("Unknown error - printing complete return value from server.");
                 console.error(`Consider raising an issue at github if problem cannot be solved.`);
-                console.error(resultAsJson);
+                console.error(responseAsJson);
             }
         } else {
-            console.error("Could not queue the build because there were validation errors or warnings:");
-            validationResults.forEach(validation => {
-                if (validation.result !== "ok") {
-                    console.error(`${validation.result}: ${validation.message}`);
-                }
-            });
+            console.error("Could not queue the build because there were validation errors or warnings.");
         }
 
         throw new Error(`Could not Trigger build. See console for more Information.`);
+    }
+
+    private logValidationResults(validationResults: IValidationResult[]): void {
+        if (validationResults === undefined) {
+            return;
+        }
+
+        validationResults.forEach(validation => {
+            if (validation.result === "error") {
+                console.error(`${validation.result}: ${validation.message}`);
+            } else if (validation.result === "warning") {
+                console.warn(`${validation.result}: ${validation.message}`);
+            }
+        });
     }
 
     private throwIfAuthenticationError<T>(result: ITfsGetResponse<T>): void {

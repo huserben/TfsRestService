@@ -120,13 +120,13 @@ var TfsRestService = (function () {
     };
     TfsRestService.prototype.triggerBuild = function (buildDefinitionName, branch, requestedForUserID, sourceVersion, demands, queueId, buildParameters) {
         return __awaiter(this, void 0, void 0, function () {
-            var buildId, queueBuildUrl, queueBuildBody, escapedBuildBody, splittedBody, result, resultAsJson, triggeredBuildID;
+            var buildId, queueBuildUrl, queueBuildBody, escapedBuildBody, splittedBody, result, responseAsJson, triggeredBuildID, validationResults;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4, this.getBuildDefinitionId(buildDefinitionName)];
                     case 1:
                         buildId = _a.sent();
-                        queueBuildUrl = "build/builds?api-version=2.0";
+                        queueBuildUrl = "build/builds?api-version=2.0&ignoreWarnings=true";
                         queueBuildBody = new QueueBuildBody(parseInt(buildId, 10));
                         if (branch !== null) {
                             queueBuildBody.sourceBranch = branch;
@@ -155,10 +155,16 @@ var TfsRestService = (function () {
                         return [4, WebRequest.post(queueBuildUrl, this.options, escapedBuildBody)];
                     case 2:
                         result = _a.sent();
-                        resultAsJson = JSON.parse(result.content);
-                        triggeredBuildID = resultAsJson.id;
+                        responseAsJson = JSON.parse(result.content);
+                        triggeredBuildID = responseAsJson.id;
                         if (triggeredBuildID === undefined) {
-                            this.handleValidationError(resultAsJson);
+                            this.handleFailedQueueRequest(responseAsJson);
+                        }
+                        else {
+                            validationResults = responseAsJson.validationResults;
+                            if (validationResults !== undefined) {
+                                this.logValidationResults(validationResults);
+                            }
                         }
                         return [2, triggeredBuildID];
                 }
@@ -283,7 +289,8 @@ var TfsRestService = (function () {
                         testRunsToReturn = [];
                         testSummariesToGetResultsFor = new linqts_1.List(testRunSummaries.value)
                             .Reverse()
-                            .Where(function (x) { return x !== undefined && x.name === testRunName; })
+                            .Where(function (x) { return x !== undefined && x.state.toLowerCase() === exports.TestRunStateCompleted.toLowerCase()
+                            && x.name === testRunName; })
                             .ToArray();
                         _i = 0, testSummariesToGetResultsFor_1 = testSummariesToGetResultsFor;
                         _a.label = 2;
@@ -414,28 +421,36 @@ var TfsRestService = (function () {
             });
         });
     };
-    TfsRestService.prototype.handleValidationError = function (resultAsJson) {
-        var validationResults = resultAsJson.ValidationResults;
+    TfsRestService.prototype.handleFailedQueueRequest = function (responseAsJson) {
+        var validationResults = responseAsJson.ValidationResults;
         if (validationResults === undefined) {
-            var errorMessage = resultAsJson.message;
+            var errorMessage = responseAsJson.message;
             if (errorMessage !== undefined) {
                 console.error(errorMessage);
             }
             else {
                 console.error("Unknown error - printing complete return value from server.");
                 console.error("Consider raising an issue at github if problem cannot be solved.");
-                console.error(resultAsJson);
+                console.error(responseAsJson);
             }
         }
         else {
-            console.error("Could not queue the build because there were validation errors or warnings:");
-            validationResults.forEach(function (validation) {
-                if (validation.result !== "ok") {
-                    console.error(validation.result + ": " + validation.message);
-                }
-            });
+            console.error("Could not queue the build because there were validation errors or warnings.");
         }
         throw new Error("Could not Trigger build. See console for more Information.");
+    };
+    TfsRestService.prototype.logValidationResults = function (validationResults) {
+        if (validationResults === undefined) {
+            return;
+        }
+        validationResults.forEach(function (validation) {
+            if (validation.result === "error") {
+                console.error(validation.result + ": " + validation.message);
+            }
+            else if (validation.result === "warning") {
+                console.warn(validation.result + ": " + validation.message);
+            }
+        });
     };
     TfsRestService.prototype.throwIfAuthenticationError = function (result) {
         if (result === undefined || result.value === undefined) {
