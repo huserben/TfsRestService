@@ -283,8 +283,7 @@ var TfsRestService = (function () {
                         testRunsToReturn = [];
                         testSummariesToGetResultsFor = new linqts_1.List(testRunSummaries.value)
                             .Reverse()
-                            .Where(function (x) { return x !== undefined && x.state.toLowerCase() === exports.TestRunStateCompleted.toLowerCase()
-                            && x.name === testRunName; })
+                            .Where(function (x) { return x !== undefined && x.name === testRunName; })
                             .ToArray();
                         _i = 0, testSummariesToGetResultsFor_1 = testSummariesToGetResultsFor;
                         _a.label = 2;
@@ -294,11 +293,9 @@ var TfsRestService = (function () {
                         return [4, WebRequest.json(testRunsUrl + "/" + testSummary.id, this.options)];
                     case 3:
                         testRun = _a.sent();
-                        if (testRun.runStatistics[0].outcome.toLowerCase() === exports.TestRunOutcomePassed.toLowerCase()) {
-                            testRunsToReturn.push(testRun);
-                            if (testRunsToReturn.length >= numberOfRunsToFetch) {
-                                return [3, 5];
-                            }
+                        testRunsToReturn.push(testRun);
+                        if (testRunsToReturn.length >= numberOfRunsToFetch) {
+                            return [3, 5];
                         }
                         _a.label = 4;
                     case 4:
@@ -460,3 +457,4 @@ var QueueBuildBody = (function () {
     }
     return QueueBuildBody;
 }());
+//# sourceMappingURL=index.js.map

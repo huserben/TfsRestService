@@ -305,7 +305,7 @@ export class TfsRestService implements ITfsRestService {
         console.log(`Found ${result.count} artifact(s)`);
 
         for (let artifact of result.value) {
-            if (artifact.resource.type !== "Container"){
+            if (artifact.resource.type !== "Container") {
                 console.log(`Cannot download artifact ${artifact.name}. Only Containers are supported (type is \"${artifact.resource.type}\"`);
                 continue;
             }
@@ -328,7 +328,7 @@ export class TfsRestService implements ITfsRestService {
                 index++;
             }
 
-            var fileRequestOptions: WebRequest.RequestOptions = { };
+            var fileRequestOptions: WebRequest.RequestOptions = {};
             fileRequestOptions.auth = this.options.auth;
             fileRequestOptions.baseUrl = "";
             fileRequestOptions.agentOptions = { rejectUnauthorized: this.options.agentOptions.rejectUnauthorized };
@@ -356,19 +356,16 @@ export class TfsRestService implements ITfsRestService {
         // reverse to fetch newest to oldest.
         let testSummariesToGetResultsFor: ITestRunSummary[] = new List<ITestRunSummary>(testRunSummaries.value)
             .Reverse()
-            .Where(x => x !== undefined && x.state.toLowerCase() === TestRunStateCompleted.toLowerCase()
-                && x.name === testRunName)
+            .Where(x => x !== undefined && x.name === testRunName)
             .ToArray();
 
         for (let testSummary of testSummariesToGetResultsFor) {
             var testRun: ITestRun = await WebRequest.json<ITestRun>(`${testRunsUrl}/${testSummary.id}`, this.options);
 
-            if (testRun.runStatistics[0].outcome.toLowerCase() === TestRunOutcomePassed.toLowerCase()) {
-                testRunsToReturn.push(testRun);
+            testRunsToReturn.push(testRun);
 
-                if (testRunsToReturn.length >= numberOfRunsToFetch) {
-                    break;
-                }
+            if (testRunsToReturn.length >= numberOfRunsToFetch) {
+                break;
             }
         }
 
