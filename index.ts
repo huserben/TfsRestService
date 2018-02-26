@@ -521,15 +521,30 @@ class QueueBuildBody implements IQueueBuildBody {
         var buildParameterString : string = "";
 
         var keyValuePairs: string[] = buildParameters.split(",");
-        keyValuePairs.forEach(kvp => {
+
+        for (var index : number = 0; index < keyValuePairs.length; index++) {
+            var kvp : string = keyValuePairs[index];
+
             var splittedKvp : string[] = kvp.split(/:(.+)/);
             var key : string = this.cleanValue(splittedKvp[0]);
             var value: string = this.cleanValue(splittedKvp[1]);
 
+            var checkNextValues: boolean = true;
+            while (index < keyValuePairs.length - 1 && checkNextValues) {
+                var nextKvp : string = keyValuePairs[index + 1];
+                if (nextKvp.indexOf(":") === -1) {
+                    // next Value is part of the value and was just separated by comma
+                    value += `, ${this.cleanValue(nextKvp)}`;
+                    index++;
+                } else {
+                    checkNextValues = false;
+                }
+            }
+
             console.log(`Found parameter ${key} with value: ${value}`);
 
             buildParameterString += `${this.escapeParametersForRequestBody(key)}: ${this.escapeParametersForRequestBody(value)},`;
-        });
+        }
 
         if (buildParameterString.endsWith(",")) {
             buildParameterString = buildParameterString.substr(0, buildParameterString.length - 1);

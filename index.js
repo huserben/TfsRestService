@@ -472,16 +472,27 @@ var QueueBuildBody = (function () {
         };
     }
     QueueBuildBody.prototype.formatBuildParameters = function (buildParameters) {
-        var _this = this;
         var buildParameterString = "";
         var keyValuePairs = buildParameters.split(",");
-        keyValuePairs.forEach(function (kvp) {
+        for (var index = 0; index < keyValuePairs.length; index++) {
+            var kvp = keyValuePairs[index];
             var splittedKvp = kvp.split(/:(.+)/);
-            var key = _this.cleanValue(splittedKvp[0]);
-            var value = _this.cleanValue(splittedKvp[1]);
+            var key = this.cleanValue(splittedKvp[0]);
+            var value = this.cleanValue(splittedKvp[1]);
+            var checkNextValues = true;
+            while (index < keyValuePairs.length - 1 && checkNextValues) {
+                var nextKvp = keyValuePairs[index + 1];
+                if (nextKvp.indexOf(":") === -1) {
+                    value += ", " + this.cleanValue(nextKvp);
+                    index++;
+                }
+                else {
+                    checkNextValues = false;
+                }
+            }
             console.log("Found parameter " + key + " with value: " + value);
-            buildParameterString += _this.escapeParametersForRequestBody(key) + ": " + _this.escapeParametersForRequestBody(value) + ",";
-        });
+            buildParameterString += this.escapeParametersForRequestBody(key) + ": " + this.escapeParametersForRequestBody(value) + ",";
+        }
         if (buildParameterString.endsWith(",")) {
             buildParameterString = buildParameterString.substr(0, buildParameterString.length - 1);
         }
@@ -503,3 +514,4 @@ var QueueBuildBody = (function () {
     };
     return QueueBuildBody;
 }());
+//# sourceMappingURL=index.js.map
