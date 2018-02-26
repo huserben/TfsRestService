@@ -33,6 +33,6 @@
     "gulp-typescript": "^3.2.3",
     "mocha": "^4.0.1",
     "sinon": "^4.0.2",
-    "typemoq": "^2.0.1",
+    "typemoq": "^2.0.1"
   }
 }
