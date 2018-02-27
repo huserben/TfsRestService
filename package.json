@@ -20,7 +20,7 @@
   "homepage": "https://github.com/huserben/TfsRestService#readme",
   "dependencies": {
     "@types/node": "^8.0.47",
-    "linqts": "^1.10.0",
+    "linqts": "^1.10.1",
     "web-request": "^1.0.7"
   },
   "devDependencies": {
@@ -32,7 +32,8 @@
     "gulp-mocha": "^4.3.1",
     "gulp-typescript": "^3.2.3",
     "mocha": "^4.0.1",
-    "sinon": "^4.0.2",
-    "typemoq": "^2.0.1"
+    "sinon": "^4.4.2",
+    "typemoq": "^2.0.1",
+    "typescript": "^2.7.2"
   }
 }
