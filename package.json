@@ -19,8 +19,7 @@
   "license": "MIT",
   "homepage": "https://github.com/huserben/TfsRestService#readme",
   "dependencies": {
-    "@types/node": "^8.0.47",
-    "linqts": "^1.10.1",
+    "linqts": "^1.10.2",
     "web-request": "^1.0.7"
   },
   "devDependencies": {
@@ -30,10 +29,10 @@
     "gulp": "^3.9.1",
     "gulp-cli": "^1.4.0",
     "gulp-mocha": "^4.3.1",
-    "gulp-typescript": "^3.2.3",
+    "gulp-typescript": "^3.2.4",
     "mocha": "^4.0.1",
     "sinon": "^4.4.2",
-    "typemoq": "^2.0.1",
+    "typemoq": "^2.1.0",
     "typescript": "^2.7.2"
   }
 }
