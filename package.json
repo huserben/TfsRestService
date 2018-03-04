@@ -19,7 +19,7 @@
   "license": "MIT",
   "homepage": "https://github.com/huserben/TfsRestService#readme",
   "dependencies": {
-    "linqts": "^1.10.2",
+    "linqts": "1.10.0",
     "web-request": "^1.0.7"
   },
   "devDependencies": {
