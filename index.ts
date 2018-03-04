@@ -486,7 +486,7 @@ export class TfsRestService implements ITfsRestService {
             if (validation.result === "error") {
                 console.error(`${validation.result}: ${validation.message}`);
             } else if (validation.result === "warning") {
-                console.warn(`${validation.result}: ${validation.message}`);
+                console.log(`${validation.result}: ${validation.message}`);
             }
         });
     }

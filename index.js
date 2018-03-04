@@ -449,7 +449,7 @@ var TfsRestService = (function () {
                 console.error(validation.result + ": " + validation.message);
             }
             else if (validation.result === "warning") {
-                console.warn(validation.result + ": " + validation.message);
+                console.log(validation.result + ": " + validation.message);
             }
         });
     };
@@ -514,4 +514,3 @@ var QueueBuildBody = (function () {
     };
     return QueueBuildBody;
 }());
-//# sourceMappingURL=index.js.map
