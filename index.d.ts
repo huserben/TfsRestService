@@ -24,6 +24,14 @@ export interface IBuild {
     id: string;
     result: string;
     status: string;
+    definition: {
+        name: string;
+    };
+    _links: {
+        web: {
+            href: string;
+        };
+    };
 }
 export interface ITfsRestService {
     initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, ignoreSslError: boolean): void;
@@ -31,6 +39,7 @@ export interface ITfsRestService {
     triggerBuild(buildDefinitionName: string, branch: string, requestedFor: string, sourceVersion: string, demands: string[], queueId: number, buildParameters: string): Promise<string>;
     downloadArtifacts(buildId: string, downloadDirectory: string): Promise<void>;
     getQueueIdByName(buildQueue: string): Promise<number>;
+    getBuildInfo(buildId: string): Promise<IBuild>;
     areBuildsFinished(triggeredBuilds: string[], failIfNotSuccessful: boolean): Promise<boolean>;
     isBuildFinished(buildId: string): Promise<boolean>;
     wasBuildSuccessful(buildId: string): Promise<boolean>;
@@ -81,6 +90,7 @@ export declare class TfsRestService implements ITfsRestService {
     wasBuildSuccessful(buildId: string): Promise<boolean>;
     getBuildDefinitionId(buildDefinitionName: string): Promise<string>;
     getAssociatedChanges(build: IBuild): Promise<IChange[]>;
+    getBuildInfo(buildId: string): Promise<IBuild>;
     private handleFailedQueueRequest(responseAsJson);
     private logValidationResults(validationResults);
     private throwIfAuthenticationError<T>(result);

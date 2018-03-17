@@ -38,6 +38,14 @@ export interface IBuild {
     id: string;
     result: string;
     status: string;
+    definition: {
+        name: string;
+    };
+    _links: {
+        web: {
+            href: string;
+        };
+    };
 }
 
 export interface ITfsRestService {
@@ -53,6 +61,7 @@ export interface ITfsRestService {
         buildParameters: string): Promise<string>;
     downloadArtifacts(buildId: string, downloadDirectory: string): Promise<void>;
     getQueueIdByName(buildQueue: string): Promise<number>;
+    getBuildInfo(buildId: string): Promise<IBuild>;
     areBuildsFinished(triggeredBuilds: string[], failIfNotSuccessful: boolean): Promise<boolean>;
     isBuildFinished(buildId: string): Promise<boolean>;
     wasBuildSuccessful(buildId: string): Promise<boolean>;
@@ -145,7 +154,7 @@ interface IQueueBuildBody {
 
 /* Tfs Rest Service Implementation */
 export class TfsRestService implements ITfsRestService {
-    options: WebRequest.RequestOptions;
+    options: WebRequest.RequestOptions = {};
 
     public initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, ignoreSslError: boolean): void {
         var baseUrl: string = `${encodeURI(tfsServer)}/${ApiUrl}/`;
@@ -243,7 +252,7 @@ export class TfsRestService implements ITfsRestService {
         if (buildParameters !== null) {
             // remove last "}" and instead add the parameter attribute
             var splittedBody: string[] = escapedBuildBody.split("");
-            var formatBuildParameters : string = queueBuildBody.formatBuildParameters(buildParameters);
+            var formatBuildParameters: string = queueBuildBody.formatBuildParameters(buildParameters);
 
             splittedBody.splice(splittedBody.lastIndexOf("}"), 1, `, ${formatBuildParameters}}`);
             escapedBuildBody = splittedBody.join("");
@@ -274,18 +283,17 @@ export class TfsRestService implements ITfsRestService {
     public async areBuildsFinished(triggeredBuilds: string[], failIfNotSuccessful: boolean): Promise<boolean> {
         var result: boolean = true;
         for (let queuedBuildId of triggeredBuilds) {
-            var buildFinished: boolean = await this.isBuildFinished(queuedBuildId);
+            var buildInfo: IBuild = await this.getBuildInfo(queuedBuildId);
+            var buildFinished: boolean = buildInfo.status === BuildStateCompleted;
 
             if (!buildFinished) {
-                console.log(`Build ${queuedBuildId} has not yet completed`);
                 result = false;
             } else {
                 result = result && true;
-                console.log(`Build ${queuedBuildId} has completed`);
-                var buildSuccessful: boolean = await this.wasBuildSuccessful(queuedBuildId);
+                var buildSuccessful: boolean = buildInfo.result === BuildResultSucceeded;
 
                 if (failIfNotSuccessful && !buildSuccessful) {
-                    throw new Error(`Build ${queuedBuildId} was not successful - failing task.`);
+                    throw new Error(`Build ${queuedBuildId} (${buildInfo.definition.name}) was not successful. See following link for more info: ${buildInfo._links.web.href}`);
                 }
             }
         }
@@ -415,17 +423,13 @@ export class TfsRestService implements ITfsRestService {
     }
 
     public async isBuildFinished(buildId: string): Promise<boolean> {
-        var requestUrl: string = `build/builds/${buildId}?api-version=2.0`;
-        var result: IBuild =
-            await WebRequest.json<IBuild>(requestUrl, this.options);
+        var result: IBuild = await this.getBuildInfo(buildId);
 
         return result.status === BuildStateCompleted;
     }
 
     public async wasBuildSuccessful(buildId: string): Promise<boolean> {
-        var requestUrl: string = `build/builds/${buildId}?api-version=2.0`;
-        var result: IBuild =
-            await WebRequest.json<IBuild>(requestUrl, this.options);
+        var result: IBuild = await this.getBuildInfo(buildId);
 
         return result.result === BuildResultSucceeded;
     }
@@ -455,6 +459,14 @@ export class TfsRestService implements ITfsRestService {
         this.throwIfAuthenticationError(result);
 
         return result.value;
+    }
+
+    public async getBuildInfo(buildId: string): Promise<IBuild> {
+        var requestUrl: string = `build/builds/${buildId}?api-version=2.0`;
+        var result: IBuild =
+            await WebRequest.json<IBuild>(requestUrl, this.options);
+
+        return result;
     }
 
     private handleFailedQueueRequest(responseAsJson: any): void {
@@ -518,20 +530,20 @@ class QueueBuildBody implements IQueueBuildBody {
     demands: string[];
 
     formatBuildParameters(buildParameters: string): string {
-        var buildParameterString : string = "";
+        var buildParameterString: string = "";
 
         var keyValuePairs: string[] = buildParameters.split(",");
 
-        for (var index : number = 0; index < keyValuePairs.length; index++) {
-            var kvp : string = keyValuePairs[index];
+        for (var index: number = 0; index < keyValuePairs.length; index++) {
+            var kvp: string = keyValuePairs[index];
 
-            var splittedKvp : string[] = kvp.split(/:(.+)/);
-            var key : string = this.cleanValue(splittedKvp[0]);
+            var splittedKvp: string[] = kvp.split(/:(.+)/);
+            var key: string = this.cleanValue(splittedKvp[0]);
             var value: string = this.cleanValue(splittedKvp[1]);
 
             var checkNextValues: boolean = true;
             while (index < keyValuePairs.length - 1 && checkNextValues) {
-                var nextKvp : string = keyValuePairs[index + 1];
+                var nextKvp: string = keyValuePairs[index + 1];
                 if (nextKvp.indexOf(":") === -1) {
                     // next Value is part of the value and was just separated by comma
                     value += `, ${this.cleanValue(nextKvp)}`;
@@ -565,9 +577,9 @@ class QueueBuildBody implements IQueueBuildBody {
 
     // the parameters have to be escaped specially because they need some special syntax that is (partly) double escaped
     escapeParametersForRequestBody(value: string): string {
-        var escapedValue : string = JSON.stringify(value);
+        var escapedValue: string = JSON.stringify(value);
         escapedValue = escapedValue.substr(1, escapedValue.length - 2);
-        var doubleEscapedValue : string = JSON.stringify(escapedValue);
+        var doubleEscapedValue: string = JSON.stringify(escapedValue);
         doubleEscapedValue = doubleEscapedValue.substr(1, doubleEscapedValue.length - 2);
         return `\\\"${doubleEscapedValue}\\\"`;
     }

@@ -61,6 +61,7 @@ exports.TestRunStateCompleted = "Completed";
 exports.TestRunOutcomePassed = "Passed";
 var TfsRestService = (function () {
     function TfsRestService() {
+        this.options = {};
     }
     TfsRestService.prototype.initialize = function (authenticationMethod, username, password, tfsServer, ignoreSslError) {
         var baseUrl = encodeURI(tfsServer) + "/" + exports.ApiUrl + "/";
@@ -174,7 +175,7 @@ var TfsRestService = (function () {
     };
     TfsRestService.prototype.areBuildsFinished = function (triggeredBuilds, failIfNotSuccessful) {
         return __awaiter(this, void 0, void 0, function () {
-            var result, _i, triggeredBuilds_1, queuedBuildId, buildFinished, buildSuccessful;
+            var result, _i, triggeredBuilds_1, queuedBuildId, buildInfo, buildFinished, buildSuccessful;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -182,29 +183,27 @@ var TfsRestService = (function () {
                         _i = 0, triggeredBuilds_1 = triggeredBuilds;
                         _a.label = 1;
                     case 1:
-                        if (!(_i < triggeredBuilds_1.length)) return [3, 6];
+                        if (!(_i < triggeredBuilds_1.length)) return [3, 4];
                         queuedBuildId = triggeredBuilds_1[_i];
-                        return [4, this.isBuildFinished(queuedBuildId)];
+                        return [4, this.getBuildInfo(queuedBuildId)];
                     case 2:
-                        buildFinished = _a.sent();
-                        if (!!buildFinished) return [3, 3];
-                        console.log("Build " + queuedBuildId + " has not yet completed");
-                        result = false;
-                        return [3, 5];
-                    case 3:
-                        result = result && true;
-                        console.log("Build " + queuedBuildId + " has completed");
-                        return [4, this.wasBuildSuccessful(queuedBuildId)];
-                    case 4:
-                        buildSuccessful = _a.sent();
-                        if (failIfNotSuccessful && !buildSuccessful) {
-                            throw new Error("Build " + queuedBuildId + " was not successful - failing task.");
+                        buildInfo = _a.sent();
+                        buildFinished = buildInfo.status === exports.BuildStateCompleted;
+                        if (!buildFinished) {
+                            result = false;
                         }
-                        _a.label = 5;
-                    case 5:
+                        else {
+                            result = result && true;
+                            buildSuccessful = buildInfo.result === exports.BuildResultSucceeded;
+                            if (failIfNotSuccessful && !buildSuccessful) {
+                                throw new Error("Build " + queuedBuildId + " (" + buildInfo.definition.name + ") was not successful. See following link for more info: " + buildInfo._links.web.href);
+                            }
+                        }
+                        _a.label = 3;
+                    case 3:
                         _i++;
                         return [3, 1];
-                    case 6: return [2, result];
+                    case 4: return [2, result];
                 }
             });
         });
@@ -359,12 +358,10 @@ var TfsRestService = (function () {
     };
     TfsRestService.prototype.isBuildFinished = function (buildId) {
         return __awaiter(this, void 0, void 0, function () {
-            var requestUrl, result;
+            var result;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        requestUrl = "build/builds/" + buildId + "?api-version=2.0";
-                        return [4, WebRequest.json(requestUrl, this.options)];
+                    case 0: return [4, this.getBuildInfo(buildId)];
                     case 1:
                         result = _a.sent();
                         return [2, result.status === exports.BuildStateCompleted];
@@ -374,12 +371,10 @@ var TfsRestService = (function () {
     };
     TfsRestService.prototype.wasBuildSuccessful = function (buildId) {
         return __awaiter(this, void 0, void 0, function () {
-            var requestUrl, result;
+            var result;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        requestUrl = "build/builds/" + buildId + "?api-version=2.0";
-                        return [4, WebRequest.json(requestUrl, this.options)];
+                    case 0: return [4, this.getBuildInfo(buildId)];
                     case 1:
                         result = _a.sent();
                         return [2, result.result === exports.BuildResultSucceeded];
@@ -418,6 +413,21 @@ var TfsRestService = (function () {
                         result = _a.sent();
                         this.throwIfAuthenticationError(result);
                         return [2, result.value];
+                }
+            });
+        });
+    };
+    TfsRestService.prototype.getBuildInfo = function (buildId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var requestUrl, result;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        requestUrl = "build/builds/" + buildId + "?api-version=2.0";
+                        return [4, WebRequest.json(requestUrl, this.options)];
+                    case 1:
+                        result = _a.sent();
+                        return [2, result];
                 }
             });
         });

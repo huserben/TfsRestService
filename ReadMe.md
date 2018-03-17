@@ -47,6 +47,9 @@ Will get all builds from a given build definition and that applie to the specifi
 ### downloadArtifacts(buildId: string, downloadDirectory: string): void
 This method will download the artifacts of the build with the specified id to the directory passed. The artifacts are downloaded as a zip.
 
+### getBuildInfo(buildId: string): Promise<IBuild\>
+Gets the *IBuild* containing information about the build with the specified id.  
+
 ### areBuildsFinished(triggeredBuilds: string[], failIfNotSuccessful: boolean): Promise<boolean\>
 Will check if **all** of the specified builds are finished. If one is not yet finished, this will return false.  
 The builds must be specified with their ids.  
