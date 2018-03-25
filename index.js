@@ -60,11 +60,12 @@ exports.BuildResultSucceeded = "succeeded";
 exports.TestRunStateCompleted = "Completed";
 exports.TestRunOutcomePassed = "Passed";
 var TfsRestService = (function () {
-    function TfsRestService(debug) {
+    function TfsRestService(debug, logDebugFunction) {
         if (debug === void 0) { debug = false; }
         this.options = {};
         this.isDebug = false;
         this.isDebug = debug;
+        this.logDebugFunction = logDebugFunction;
     }
     TfsRestService.prototype.initialize = function (authenticationMethod, username, password, tfsServer, ignoreSslError) {
         var baseUrl = encodeURI(tfsServer) + "/" + exports.ApiUrl + "/";
@@ -506,7 +507,12 @@ var TfsRestService = (function () {
     };
     TfsRestService.prototype.logDebug = function (message) {
         if (this.isDebug) {
-            console.log("###DEBUG: " + message);
+            if (this.logDebugFunction !== undefined) {
+                this.logDebugFunction(message);
+            }
+            else {
+                console.log("###DEBUG: " + message);
+            }
         }
     };
     return TfsRestService;

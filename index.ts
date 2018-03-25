@@ -156,9 +156,11 @@ interface IQueueBuildBody {
 export class TfsRestService implements ITfsRestService {
     options: WebRequest.RequestOptions = {};
     isDebug: boolean = false;
+    logDebugFunction: (message: string) => void;
 
-    constructor(debug: boolean = false) {
+    constructor(debug: boolean = false, logDebugFunction?: (message: string) => void) {
         this.isDebug = debug;
+        this.logDebugFunction = logDebugFunction;
     }
 
     public initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, ignoreSslError: boolean): void {
@@ -563,7 +565,11 @@ export class TfsRestService implements ITfsRestService {
 
     private logDebug(message: any): void {
         if (this.isDebug) {
-            console.log(`###DEBUG: ${message}`);
+            if (this.logDebugFunction !== undefined) {
+                this.logDebugFunction(message);
+            } else {
+                console.log(`###DEBUG: ${message}`);
+            }
         }
     }
 }
