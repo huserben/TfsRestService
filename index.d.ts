@@ -78,6 +78,8 @@ export interface IChange {
 }
 export declare class TfsRestService implements ITfsRestService {
     options: WebRequest.RequestOptions;
+    isDebug: boolean;
+    constructor(debug?: boolean);
     initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, ignoreSslError: boolean): void;
     getBuildsByStatus(buildDefinitionName: string, statusFilter: string): Promise<IBuild[]>;
     triggerBuild(buildDefinitionName: string, branch: string, requestedForUserID: string, sourceVersion: string, demands: string[], queueId: number, buildParameters: string): Promise<string>;
@@ -94,4 +96,5 @@ export declare class TfsRestService implements ITfsRestService {
     private handleFailedQueueRequest(responseAsJson);
     private logValidationResults(validationResults);
     private throwIfAuthenticationError<T>(result);
+    private logDebug(message);
 }

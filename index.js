@@ -60,8 +60,11 @@ exports.BuildResultSucceeded = "succeeded";
 exports.TestRunStateCompleted = "Completed";
 exports.TestRunOutcomePassed = "Passed";
 var TfsRestService = (function () {
-    function TfsRestService() {
+    function TfsRestService(debug) {
+        if (debug === void 0) { debug = false; }
         this.options = {};
+        this.isDebug = false;
+        this.isDebug = debug;
     }
     TfsRestService.prototype.initialize = function (authenticationMethod, username, password, tfsServer, ignoreSslError) {
         var baseUrl = encodeURI(tfsServer) + "/" + exports.ApiUrl + "/";
@@ -101,6 +104,7 @@ var TfsRestService = (function () {
         this.options.baseUrl = baseUrl;
         this.options.agentOptions = { rejectUnauthorized: !ignoreSslError };
         this.options.encoding = "utf-8";
+        this.options.throwResponseError = true;
     };
     TfsRestService.prototype.getBuildsByStatus = function (buildDefinitionName, statusFilter) {
         return __awaiter(this, void 0, void 0, function () {
@@ -111,9 +115,13 @@ var TfsRestService = (function () {
                     case 1:
                         buildDefinitionID = _a.sent();
                         requestUrl = "build/builds?api-version=2.0&definitions=" + buildDefinitionID + "&statusFilter=" + statusFilter;
+                        this.logDebug("Sending Request to following url:");
+                        this.logDebug(requestUrl);
                         return [4, WebRequest.json(requestUrl, this.options)];
                     case 2:
                         result = _a.sent();
+                        this.logDebug("Result:");
+                        this.logDebug(result.value);
                         return [2, result.value];
                 }
             });
@@ -153,10 +161,14 @@ var TfsRestService = (function () {
                             escapedBuildBody = splittedBody.join("");
                         }
                         console.log("Queue new Build for definition " + buildDefinitionName);
-                        console.log("Request Body: " + escapedBuildBody);
+                        this.logDebug("Sending Request to following url:");
+                        this.logDebug(queueBuildUrl);
+                        this.logDebug("Request Body: " + escapedBuildBody);
                         return [4, WebRequest.post(queueBuildUrl, this.options, escapedBuildBody)];
                     case 2:
                         result = _a.sent();
+                        this.logDebug("Result");
+                        this.logDebug(JSON.stringify(result));
                         responseAsJson = JSON.parse(result.content);
                         triggeredBuildID = responseAsJson.id;
                         if (triggeredBuildID === undefined) {
@@ -223,9 +235,13 @@ var TfsRestService = (function () {
                             downloadDirectory += "\\";
                         }
                         requestUrl = "build/builds/" + buildId + "/artifacts";
+                        this.logDebug("Sending Request to following url:");
+                        this.logDebug(requestUrl);
                         return [4, WebRequest.json(requestUrl, this.options)];
                     case 1:
                         result = _b.sent();
+                        this.logDebug("Result:");
+                        this.logDebug(JSON.stringify(result));
                         if (result.count === undefined) {
                             console.log("No artifacts found for build " + buildId + " - skipping...");
                         }
@@ -336,9 +352,13 @@ var TfsRestService = (function () {
                 switch (_d.label) {
                     case 0:
                         requestUrl = "distributedtask/queues";
+                        this.logDebug("Sending Request to following url:");
+                        this.logDebug(requestUrl);
                         return [4, WebRequest.json(requestUrl, this.options)];
                     case 1:
                         result = _d.sent();
+                        this.logDebug("Result:");
+                        this.logDebug(JSON.stringify(result));
                         this.throwIfAuthenticationError(result);
                         for (_i = 0, _a = result.value; _i < _a.length; _i++) {
                             queue = _a[_i];
@@ -389,9 +409,13 @@ var TfsRestService = (function () {
                 switch (_a.label) {
                     case 0:
                         requestUrl = "build/definitions?api-version=2.0&name=" + encodeURIComponent(buildDefinitionName);
+                        this.logDebug("Sending Request to following url:");
+                        this.logDebug(requestUrl);
                         return [4, WebRequest.json(requestUrl, this.options)];
                     case 1:
                         result = _a.sent();
+                        this.logDebug("Result:");
+                        this.logDebug(JSON.stringify(result));
                         this.throwIfAuthenticationError(result);
                         if (result.count === 0) {
                             throw new Error("Did not find any build definition with this name: " + buildDefinitionName + "\n            - checked following url: " + this.options.baseUrl + requestUrl);
@@ -408,9 +432,13 @@ var TfsRestService = (function () {
                 switch (_a.label) {
                     case 0:
                         requestUrl = "build/builds/" + build.id + "/changes?api-version=2.0";
+                        this.logDebug("Sending Request to following url:");
+                        this.logDebug(requestUrl);
                         return [4, WebRequest.json(requestUrl, this.options)];
                     case 1:
                         result = _a.sent();
+                        this.logDebug("Result:");
+                        this.logDebug(JSON.stringify(result));
                         this.throwIfAuthenticationError(result);
                         return [2, result.value];
                 }
@@ -424,9 +452,13 @@ var TfsRestService = (function () {
                 switch (_a.label) {
                     case 0:
                         requestUrl = "build/builds/" + buildId + "?api-version=2.0";
+                        this.logDebug("Sending Request to following url:");
+                        this.logDebug(requestUrl);
                         return [4, WebRequest.json(requestUrl, this.options)];
                     case 1:
                         result = _a.sent();
+                        this.logDebug("Result:");
+                        this.logDebug(JSON.stringify(result));
                         return [2, result];
                 }
             });
@@ -470,6 +502,11 @@ var TfsRestService = (function () {
             console.log("If you use a Personal Access Token, make sure it did not expire.");
             console.log("If you use Basic Authentication, make sure alternate credentials are enabled on your TFS/VSTS.");
             throw new Error("Authentication with TFS Server failed. Please check your settings.");
+        }
+    };
+    TfsRestService.prototype.logDebug = function (message) {
+        if (this.isDebug) {
+            console.log("###DEBUG: " + message);
         }
     };
     return TfsRestService;
@@ -524,3 +561,4 @@ var QueueBuildBody = (function () {
     };
     return QueueBuildBody;
 }());
+//# sourceMappingURL=index.js.map

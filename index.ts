@@ -155,6 +155,11 @@ interface IQueueBuildBody {
 /* Tfs Rest Service Implementation */
 export class TfsRestService implements ITfsRestService {
     options: WebRequest.RequestOptions = {};
+    isDebug: boolean = false;
+
+    constructor(debug: boolean = false) {
+        this.isDebug = debug;
+    }
 
     public initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, ignoreSslError: boolean): void {
         var baseUrl: string = `${encodeURI(tfsServer)}/${ApiUrl}/`;
@@ -198,6 +203,7 @@ export class TfsRestService implements ITfsRestService {
         this.options.baseUrl = baseUrl;
         this.options.agentOptions = { rejectUnauthorized: !ignoreSslError };
         this.options.encoding = "utf-8";
+        this.options.throwResponseError = true;
     }
 
     public async getBuildsByStatus(buildDefinitionName: string, statusFilter: string): Promise<IBuild[]> {
@@ -206,8 +212,14 @@ export class TfsRestService implements ITfsRestService {
         var requestUrl: string =
             `build/builds?api-version=2.0&definitions=${buildDefinitionID}&statusFilter=${statusFilter}`;
 
+        this.logDebug("Sending Request to following url:");
+        this.logDebug(requestUrl);
+
         var result: ITfsGetResponse<IBuild> =
             await WebRequest.json<ITfsGetResponse<IBuild>>(requestUrl, this.options);
+
+        this.logDebug("Result:");
+        this.logDebug(result.value);
 
         return result.value;
     }
@@ -259,9 +271,14 @@ export class TfsRestService implements ITfsRestService {
         }
 
         console.log(`Queue new Build for definition ${buildDefinitionName}`);
-        console.log(`Request Body: ${escapedBuildBody}`);
+        this.logDebug("Sending Request to following url:");
+        this.logDebug(queueBuildUrl);
+        this.logDebug(`Request Body: ${escapedBuildBody}`);
 
         var result: WebRequest.Response<string> = await WebRequest.post(queueBuildUrl, this.options, escapedBuildBody);
+
+        this.logDebug("Result");
+        this.logDebug(JSON.stringify(result));
 
         var responseAsJson: any = JSON.parse(result.content);
         var triggeredBuildID: string = responseAsJson.id;
@@ -314,7 +331,13 @@ export class TfsRestService implements ITfsRestService {
         }
 
         var requestUrl: string = `build/builds/${buildId}/artifacts`;
+        this.logDebug("Sending Request to following url:");
+        this.logDebug(requestUrl);
+
         var result: ITfsGetResponse<IArtifact> = await WebRequest.json<ITfsGetResponse<IArtifact>>(requestUrl, this.options);
+
+        this.logDebug("Result:");
+        this.logDebug(JSON.stringify(result));
 
         if (result.count === undefined) {
             console.log(`No artifacts found for build ${buildId} - skipping...`);
@@ -404,7 +427,14 @@ export class TfsRestService implements ITfsRestService {
 
     public async getQueueIdByName(buildQueue: string): Promise<number> {
         var requestUrl: string = `distributedtask/queues`;
+
+        this.logDebug("Sending Request to following url:");
+        this.logDebug(requestUrl);
+
         var result: ITfsGetResponse<IQueue> = await WebRequest.json<ITfsGetResponse<IQueue>>(requestUrl, this.options);
+
+        this.logDebug("Result:");
+        this.logDebug(JSON.stringify(result));
 
         this.throwIfAuthenticationError(result);
 
@@ -437,8 +467,13 @@ export class TfsRestService implements ITfsRestService {
     public async getBuildDefinitionId(buildDefinitionName: string): Promise<string> {
         var requestUrl: string = `build/definitions?api-version=2.0&name=${encodeURIComponent(buildDefinitionName)}`;
 
+        this.logDebug("Sending Request to following url:");
+        this.logDebug(requestUrl);
         var result: ITfsGetResponse<IBuild> =
             await WebRequest.json<ITfsGetResponse<IBuild>>(requestUrl, this.options);
+
+        this.logDebug("Result:");
+        this.logDebug(JSON.stringify(result));
 
         this.throwIfAuthenticationError(result);
 
@@ -452,9 +487,14 @@ export class TfsRestService implements ITfsRestService {
 
     public async getAssociatedChanges(build: IBuild): Promise<IChange[]> {
         var requestUrl: string = `build/builds/${build.id}/changes?api-version=2.0`;
+        this.logDebug("Sending Request to following url:");
+        this.logDebug(requestUrl);
 
         var result: ITfsGetResponse<IChange> =
             await WebRequest.json<ITfsGetResponse<IChange>>(requestUrl, this.options);
+
+        this.logDebug("Result:");
+        this.logDebug(JSON.stringify(result));
 
         this.throwIfAuthenticationError(result);
 
@@ -463,8 +503,15 @@ export class TfsRestService implements ITfsRestService {
 
     public async getBuildInfo(buildId: string): Promise<IBuild> {
         var requestUrl: string = `build/builds/${buildId}?api-version=2.0`;
+
+        this.logDebug("Sending Request to following url:");
+        this.logDebug(requestUrl);
+
         var result: IBuild =
             await WebRequest.json<IBuild>(requestUrl, this.options);
+
+        this.logDebug("Result:");
+        this.logDebug(JSON.stringify(result));
 
         return result;
     }
@@ -509,7 +556,14 @@ export class TfsRestService implements ITfsRestService {
             console.log("If you use the OAuth Token, make sure you enabled the access to it on the Build Definition.");
             console.log("If you use a Personal Access Token, make sure it did not expire.");
             console.log("If you use Basic Authentication, make sure alternate credentials are enabled on your TFS/VSTS.");
+
             throw new Error(`Authentication with TFS Server failed. Please check your settings.`);
+        }
+    }
+
+    private logDebug(message: any): void {
+        if (this.isDebug) {
+            console.log(`###DEBUG: ${message}`);
         }
     }
 }
