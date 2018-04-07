@@ -57,6 +57,7 @@ exports.BuildStateNotStarted = "notStarted";
 exports.BuildStateInProgress = "inProgress";
 exports.BuildStateCompleted = "completed";
 exports.BuildResultSucceeded = "succeeded";
+exports.BuildResultPartiallySucceeded = "partiallySucceeded";
 exports.TestRunStateCompleted = "Completed";
 exports.TestRunOutcomePassed = "Passed";
 var TfsRestService = (function () {
@@ -116,13 +117,9 @@ var TfsRestService = (function () {
                     case 1:
                         buildDefinitionID = _a.sent();
                         requestUrl = "build/builds?api-version=2.0&definitions=" + buildDefinitionID + "&statusFilter=" + statusFilter;
-                        this.logDebug("Sending Request to following url:");
-                        this.logDebug(requestUrl);
-                        return [4, WebRequest.json(requestUrl, this.options)];
+                        return [4, this.sendGetRequest(requestUrl)];
                     case 2:
                         result = _a.sent();
-                        this.logDebug("Result:");
-                        this.logDebug(result.value);
                         return [2, result.value];
                 }
             });
@@ -186,7 +183,7 @@ var TfsRestService = (function () {
             });
         });
     };
-    TfsRestService.prototype.areBuildsFinished = function (triggeredBuilds, failIfNotSuccessful) {
+    TfsRestService.prototype.areBuildsFinished = function (triggeredBuilds, failIfNotSuccessful, treatPartiallySucceededBuildAsSuccessful) {
         return __awaiter(this, void 0, void 0, function () {
             var result, _i, triggeredBuilds_1, queuedBuildId, buildInfo, buildFinished, buildSuccessful;
             return __generator(this, function (_a) {
@@ -208,6 +205,9 @@ var TfsRestService = (function () {
                         else {
                             result = result && true;
                             buildSuccessful = buildInfo.result === exports.BuildResultSucceeded;
+                            if (!buildSuccessful && treatPartiallySucceededBuildAsSuccessful) {
+                                buildSuccessful = buildInfo.result === exports.BuildResultPartiallySucceeded;
+                            }
                             if (failIfNotSuccessful && !buildSuccessful) {
                                 throw new Error("Build " + queuedBuildId + " (" + buildInfo.definition.name + ") was not successful. See following link for more info: " + buildInfo._links.web.href);
                             }
@@ -236,13 +236,9 @@ var TfsRestService = (function () {
                             downloadDirectory += "\\";
                         }
                         requestUrl = "build/builds/" + buildId + "/artifacts";
-                        this.logDebug("Sending Request to following url:");
-                        this.logDebug(requestUrl);
-                        return [4, WebRequest.json(requestUrl, this.options)];
+                        return [4, this.sendGetRequest(requestUrl)];
                     case 1:
                         result = _b.sent();
-                        this.logDebug("Result:");
-                        this.logDebug(JSON.stringify(result));
                         if (result.count === undefined) {
                             console.log("No artifacts found for build " + buildId + " - skipping...");
                         }
@@ -353,13 +349,9 @@ var TfsRestService = (function () {
                 switch (_d.label) {
                     case 0:
                         requestUrl = "distributedtask/queues";
-                        this.logDebug("Sending Request to following url:");
-                        this.logDebug(requestUrl);
-                        return [4, WebRequest.json(requestUrl, this.options)];
+                        return [4, this.sendGetRequest(requestUrl)];
                     case 1:
                         result = _d.sent();
-                        this.logDebug("Result:");
-                        this.logDebug(JSON.stringify(result));
                         this.throwIfAuthenticationError(result);
                         for (_i = 0, _a = result.value; _i < _a.length; _i++) {
                             queue = _a[_i];
@@ -410,13 +402,9 @@ var TfsRestService = (function () {
                 switch (_a.label) {
                     case 0:
                         requestUrl = "build/definitions?api-version=2.0&name=" + encodeURIComponent(buildDefinitionName);
-                        this.logDebug("Sending Request to following url:");
-                        this.logDebug(requestUrl);
-                        return [4, WebRequest.json(requestUrl, this.options)];
+                        return [4, this.sendGetRequest(requestUrl)];
                     case 1:
                         result = _a.sent();
-                        this.logDebug("Result:");
-                        this.logDebug(JSON.stringify(result));
                         this.throwIfAuthenticationError(result);
                         if (result.count === 0) {
                             throw new Error("Did not find any build definition with this name: " + buildDefinitionName + "\n            - checked following url: " + this.options.baseUrl + requestUrl);
@@ -433,13 +421,9 @@ var TfsRestService = (function () {
                 switch (_a.label) {
                     case 0:
                         requestUrl = "build/builds/" + build.id + "/changes?api-version=2.0";
-                        this.logDebug("Sending Request to following url:");
-                        this.logDebug(requestUrl);
-                        return [4, WebRequest.json(requestUrl, this.options)];
+                        return [4, this.sendGetRequest(requestUrl)];
                     case 1:
                         result = _a.sent();
-                        this.logDebug("Result:");
-                        this.logDebug(JSON.stringify(result));
                         this.throwIfAuthenticationError(result);
                         return [2, result.value];
                 }
@@ -448,19 +432,53 @@ var TfsRestService = (function () {
     };
     TfsRestService.prototype.getBuildInfo = function (buildId) {
         return __awaiter(this, void 0, void 0, function () {
-            var requestUrl, result;
+            var requestUrl, buildInfo;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         requestUrl = "build/builds/" + buildId + "?api-version=2.0";
+                        return [4, this.sendGetRequest(requestUrl)];
+                    case 1:
+                        buildInfo = _a.sent();
+                        return [2, buildInfo];
+                }
+            });
+        });
+    };
+    TfsRestService.prototype.sendGetRequest = function (requestUrl) {
+        return __awaiter(this, void 0, void 0, function () {
+            var retryIndex, requestError, result, error_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        retryIndex = 1;
                         this.logDebug("Sending Request to following url:");
                         this.logDebug(requestUrl);
-                        return [4, WebRequest.json(requestUrl, this.options)];
+                        requestError = "";
+                        _a.label = 1;
                     case 1:
+                        if (!(retryIndex < 6)) return [3, 6];
+                        _a.label = 2;
+                    case 2:
+                        _a.trys.push([2, 4, , 5]);
+                        return [4, WebRequest.json(requestUrl, this.options)];
+                    case 3:
                         result = _a.sent();
                         this.logDebug("Result:");
                         this.logDebug(JSON.stringify(result));
                         return [2, result];
+                    case 4:
+                        error_1 = _a.sent();
+                        this.logDebug("An error happened during the request (Try " + retryIndex + "/5)");
+                        this.logDebug(error_1);
+                        requestError = error_1;
+                        retryIndex++;
+                        return [3, 5];
+                    case 5: return [3, 1];
+                    case 6:
+                        console.log("Request was not successful.");
+                        console.log(requestError);
+                        return [2];
                 }
             });
         });
@@ -567,4 +585,3 @@ var QueueBuildBody = (function () {
     };
     return QueueBuildBody;
 }());
-//# sourceMappingURL=index.js.map

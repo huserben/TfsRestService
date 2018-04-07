@@ -28,6 +28,7 @@ export const BuildStateNotStarted: string = "notStarted";
 export const BuildStateInProgress: string = "inProgress";
 export const BuildStateCompleted: string = "completed";
 export const BuildResultSucceeded: string = "succeeded";
+export const BuildResultPartiallySucceeded: string = "partiallySucceeded";
 
 export const TestRunStateCompleted: string = "Completed";
 export const TestRunOutcomePassed: string = "Passed";
@@ -62,7 +63,7 @@ export interface ITfsRestService {
     downloadArtifacts(buildId: string, downloadDirectory: string): Promise<void>;
     getQueueIdByName(buildQueue: string): Promise<number>;
     getBuildInfo(buildId: string): Promise<IBuild>;
-    areBuildsFinished(triggeredBuilds: string[], failIfNotSuccessful: boolean): Promise<boolean>;
+    areBuildsFinished(triggeredBuilds: string[], failIfNotSuccessful: boolean, failIfPartiallySucceeded: boolean): Promise<boolean>;
     isBuildFinished(buildId: string): Promise<boolean>;
     wasBuildSuccessful(buildId: string): Promise<boolean>;
     getBuildDefinitionId(buildDefinitionName: string): Promise<string>;
@@ -214,14 +215,8 @@ export class TfsRestService implements ITfsRestService {
         var requestUrl: string =
             `build/builds?api-version=2.0&definitions=${buildDefinitionID}&statusFilter=${statusFilter}`;
 
-        this.logDebug("Sending Request to following url:");
-        this.logDebug(requestUrl);
-
         var result: ITfsGetResponse<IBuild> =
-            await WebRequest.json<ITfsGetResponse<IBuild>>(requestUrl, this.options);
-
-        this.logDebug("Result:");
-        this.logDebug(result.value);
+            await this.sendGetRequest<ITfsGetResponse<IBuild>>(requestUrl);
 
         return result.value;
     }
@@ -299,7 +294,8 @@ export class TfsRestService implements ITfsRestService {
         return triggeredBuildID;
     }
 
-    public async areBuildsFinished(triggeredBuilds: string[], failIfNotSuccessful: boolean): Promise<boolean> {
+    public async areBuildsFinished(
+        triggeredBuilds: string[], failIfNotSuccessful: boolean, treatPartiallySucceededBuildAsSuccessful: boolean): Promise<boolean> {
         var result: boolean = true;
         for (let queuedBuildId of triggeredBuilds) {
             var buildInfo: IBuild = await this.getBuildInfo(queuedBuildId);
@@ -310,6 +306,10 @@ export class TfsRestService implements ITfsRestService {
             } else {
                 result = result && true;
                 var buildSuccessful: boolean = buildInfo.result === BuildResultSucceeded;
+
+                if (!buildSuccessful && treatPartiallySucceededBuildAsSuccessful) {
+                    buildSuccessful = buildInfo.result === BuildResultPartiallySucceeded;
+                }
 
                 if (failIfNotSuccessful && !buildSuccessful) {
                     throw new Error(`Build ${queuedBuildId} (${buildInfo.definition.name}) was not successful. See following link for more info: ${buildInfo._links.web.href}`);
@@ -333,13 +333,8 @@ export class TfsRestService implements ITfsRestService {
         }
 
         var requestUrl: string = `build/builds/${buildId}/artifacts`;
-        this.logDebug("Sending Request to following url:");
-        this.logDebug(requestUrl);
 
-        var result: ITfsGetResponse<IArtifact> = await WebRequest.json<ITfsGetResponse<IArtifact>>(requestUrl, this.options);
-
-        this.logDebug("Result:");
-        this.logDebug(JSON.stringify(result));
+        var result: ITfsGetResponse<IArtifact> = await this.sendGetRequest<ITfsGetResponse<IArtifact>>(requestUrl);
 
         if (result.count === undefined) {
             console.log(`No artifacts found for build ${buildId} - skipping...`);
@@ -430,14 +425,7 @@ export class TfsRestService implements ITfsRestService {
     public async getQueueIdByName(buildQueue: string): Promise<number> {
         var requestUrl: string = `distributedtask/queues`;
 
-        this.logDebug("Sending Request to following url:");
-        this.logDebug(requestUrl);
-
-        var result: ITfsGetResponse<IQueue> = await WebRequest.json<ITfsGetResponse<IQueue>>(requestUrl, this.options);
-
-        this.logDebug("Result:");
-        this.logDebug(JSON.stringify(result));
-
+        var result: ITfsGetResponse<IQueue> = await this.sendGetRequest<ITfsGetResponse<IQueue>>(requestUrl);
         this.throwIfAuthenticationError(result);
 
         for (let queue of result.value) {
@@ -469,13 +457,8 @@ export class TfsRestService implements ITfsRestService {
     public async getBuildDefinitionId(buildDefinitionName: string): Promise<string> {
         var requestUrl: string = `build/definitions?api-version=2.0&name=${encodeURIComponent(buildDefinitionName)}`;
 
-        this.logDebug("Sending Request to following url:");
-        this.logDebug(requestUrl);
         var result: ITfsGetResponse<IBuild> =
-            await WebRequest.json<ITfsGetResponse<IBuild>>(requestUrl, this.options);
-
-        this.logDebug("Result:");
-        this.logDebug(JSON.stringify(result));
+            await this.sendGetRequest<ITfsGetResponse<IBuild>>(requestUrl);
 
         this.throwIfAuthenticationError(result);
 
@@ -489,14 +472,7 @@ export class TfsRestService implements ITfsRestService {
 
     public async getAssociatedChanges(build: IBuild): Promise<IChange[]> {
         var requestUrl: string = `build/builds/${build.id}/changes?api-version=2.0`;
-        this.logDebug("Sending Request to following url:");
-        this.logDebug(requestUrl);
-
-        var result: ITfsGetResponse<IChange> =
-            await WebRequest.json<ITfsGetResponse<IChange>>(requestUrl, this.options);
-
-        this.logDebug("Result:");
-        this.logDebug(JSON.stringify(result));
+        var result: ITfsGetResponse<IChange> = await this.sendGetRequest<ITfsGetResponse<IChange>>(requestUrl);
 
         this.throwIfAuthenticationError(result);
 
@@ -506,16 +482,37 @@ export class TfsRestService implements ITfsRestService {
     public async getBuildInfo(buildId: string): Promise<IBuild> {
         var requestUrl: string = `build/builds/${buildId}?api-version=2.0`;
 
+        var buildInfo: IBuild = await this.sendGetRequest<IBuild>(requestUrl);
+        return buildInfo;
+    }
+
+    private async sendGetRequest<T>(requestUrl: string): Promise<T> {
+        var retryIndex: number = 1;
         this.logDebug("Sending Request to following url:");
         this.logDebug(requestUrl);
 
-        var result: IBuild =
-            await WebRequest.json<IBuild>(requestUrl, this.options);
+        var requestError: string = "";
 
-        this.logDebug("Result:");
-        this.logDebug(JSON.stringify(result));
+        while (retryIndex < 6) {
+            try {
+                var result: T =
+                    await WebRequest.json<T>(requestUrl, this.options);
 
-        return result;
+                this.logDebug("Result:");
+                this.logDebug(JSON.stringify(result));
+
+                return result;
+            } catch (error) {
+                this.logDebug(`An error happened during the request (Try ${retryIndex}/5)`);
+                this.logDebug(error);
+
+                requestError = error;
+                retryIndex++;
+            }
+        }
+
+        console.log("Request was not successful.");
+        console.log(requestError);
     }
 
     private handleFailedQueueRequest(responseAsJson: any): void {

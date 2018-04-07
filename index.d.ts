@@ -17,6 +17,7 @@ export declare const BuildStateNotStarted: string;
 export declare const BuildStateInProgress: string;
 export declare const BuildStateCompleted: string;
 export declare const BuildResultSucceeded: string;
+export declare const BuildResultPartiallySucceeded: string;
 export declare const TestRunStateCompleted: string;
 export declare const TestRunOutcomePassed: string;
 export interface IBuild {
@@ -40,7 +41,7 @@ export interface ITfsRestService {
     downloadArtifacts(buildId: string, downloadDirectory: string): Promise<void>;
     getQueueIdByName(buildQueue: string): Promise<number>;
     getBuildInfo(buildId: string): Promise<IBuild>;
-    areBuildsFinished(triggeredBuilds: string[], failIfNotSuccessful: boolean): Promise<boolean>;
+    areBuildsFinished(triggeredBuilds: string[], failIfNotSuccessful: boolean, failIfPartiallySucceeded: boolean): Promise<boolean>;
     isBuildFinished(buildId: string): Promise<boolean>;
     wasBuildSuccessful(buildId: string): Promise<boolean>;
     getBuildDefinitionId(buildDefinitionName: string): Promise<string>;
@@ -84,7 +85,7 @@ export declare class TfsRestService implements ITfsRestService {
     initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, ignoreSslError: boolean): void;
     getBuildsByStatus(buildDefinitionName: string, statusFilter: string): Promise<IBuild[]>;
     triggerBuild(buildDefinitionName: string, branch: string, requestedForUserID: string, sourceVersion: string, demands: string[], queueId: number, buildParameters: string): Promise<string>;
-    areBuildsFinished(triggeredBuilds: string[], failIfNotSuccessful: boolean): Promise<boolean>;
+    areBuildsFinished(triggeredBuilds: string[], failIfNotSuccessful: boolean, treatPartiallySucceededBuildAsSuccessful: boolean): Promise<boolean>;
     downloadArtifacts(buildId: string, downloadDirectory: string): Promise<void>;
     getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<ITestRun[]>;
     getTestResults(testRun: ITestRun): Promise<ITestResult[]>;
@@ -94,6 +95,7 @@ export declare class TfsRestService implements ITfsRestService {
     getBuildDefinitionId(buildDefinitionName: string): Promise<string>;
     getAssociatedChanges(build: IBuild): Promise<IChange[]>;
     getBuildInfo(buildId: string): Promise<IBuild>;
+    private sendGetRequest<T>(requestUrl);
     private handleFailedQueueRequest(responseAsJson);
     private logValidationResults(validationResults);
     private throwIfAuthenticationError<T>(result);
