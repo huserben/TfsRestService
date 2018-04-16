@@ -548,7 +548,7 @@ var QueueBuildBody = (function () {
         for (var index = 0; index < keyValuePairs.length; index++) {
             var kvp = keyValuePairs[index];
             var splittedKvp = kvp.split(/:(.+)/);
-            if (splittedKvp.length !== 2) {
+            if (splittedKvp[0] === undefined || splittedKvp[1] === undefined) {
                 var errorMessage = "Build Parameters were not in expected format. Please verify that parameters are in the following format: \"VariableName: Value\"";
                 console.error(errorMessage);
                 console.error("Specified build parameters: " + buildParameters);
@@ -591,3 +591,4 @@ var QueueBuildBody = (function () {
     };
     return QueueBuildBody;
 }());
+//# sourceMappingURL=index.js.map
