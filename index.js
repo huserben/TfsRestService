@@ -548,6 +548,12 @@ var QueueBuildBody = (function () {
         for (var index = 0; index < keyValuePairs.length; index++) {
             var kvp = keyValuePairs[index];
             var splittedKvp = kvp.split(/:(.+)/);
+            if (splittedKvp.length !== 2) {
+                var errorMessage = "Build Parameters were not in expected format. Please verify that parameters are in the following format: \"VariableName: Value\"";
+                console.error(errorMessage);
+                console.error("Specified build parameters: " + buildParameters);
+                throw new Error(errorMessage);
+            }
             var key = this.cleanValue(splittedKvp[0]);
             var value = this.cleanValue(splittedKvp[1]);
             var checkNextValues = true;

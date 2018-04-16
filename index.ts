@@ -595,6 +595,15 @@ class QueueBuildBody implements IQueueBuildBody {
             var kvp: string = keyValuePairs[index];
 
             var splittedKvp: string[] = kvp.split(/:(.+)/);
+
+            if (splittedKvp.length !== 2) {
+                var errorMessage: string = `Build Parameters were not in expected format. Please verify that parameters are in the following format: \"VariableName: Value\"`;
+
+                console.error(errorMessage);
+                console.error(`Specified build parameters: ${buildParameters}`);
+                throw new Error(errorMessage);
+            }
+
             var key: string = this.cleanValue(splittedKvp[0]);
             var value: string = this.cleanValue(splittedKvp[1]);
 
