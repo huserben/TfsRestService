@@ -27,6 +27,7 @@ export const AuthenticationMethodPersonalAccessToken: string = "Personal Access 
 export const BuildStateNotStarted: string = "notStarted";
 export const BuildStateInProgress: string = "inProgress";
 export const BuildStateCompleted: string = "completed";
+export const BuildStateCancelling: string = "cancelling";
 export const BuildResultSucceeded: string = "succeeded";
 export const BuildResultPartiallySucceeded: string = "partiallySucceeded";
 
@@ -70,6 +71,7 @@ export interface ITfsRestService {
     getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<ITestRun[]>;
     getTestResults(testRun: ITestRun): Promise<ITestResult[]>;
     getAssociatedChanges(build: IBuild): Promise<IChange[]>;
+    cancelBuild(buildId: string): Promise<void>;
 }
 
 export interface ITestRun {
@@ -318,6 +320,29 @@ export class TfsRestService implements ITfsRestService {
         }
 
         return result;
+    }
+
+    public async cancelBuild(buildId: string): Promise<void> {
+        var buildInfo: IBuild = await this.getBuildInfo(buildId);
+
+        if (buildInfo.status === BuildStateCompleted) {
+            console.log(`Build ${buildId} has already finished.`);
+            return;
+        }
+
+        buildInfo.status = BuildStateCancelling;
+
+        var queueBuildUrl: string = `build/builds/${buildId}?api-version=2.0`;
+        var queueBuildBody: string = JSON.stringify(buildInfo);
+
+        this.logDebug("Sending Request to following url:");
+        this.logDebug(queueBuildUrl);
+        this.logDebug(`Request Body: ${queueBuildBody}`);
+
+        var result: WebRequest.Response<string> = await WebRequest.patch(queueBuildUrl, this.options, queueBuildBody);
+
+        this.logDebug("Result");
+        this.logDebug(JSON.stringify(result));
     }
 
     public async downloadArtifacts(buildId: string, downloadDirectory: string): Promise<void> {

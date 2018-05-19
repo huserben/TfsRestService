@@ -75,3 +75,6 @@ Will get a list of all Test Runs which match the specified name. Will only get t
 
 ### getTestResults(testRun: ITestRun): Promise<ITestResult[]\>  
 Gets the Tests that were run as part of the specified test run.
+
+### cancelBuild(buildId: string): Promise<void>
+Cancels the build with the specified id. Ignored when the build has already completed.

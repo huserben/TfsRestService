@@ -56,6 +56,7 @@ exports.AuthenticationMethodPersonalAccessToken = "Personal Access Token";
 exports.BuildStateNotStarted = "notStarted";
 exports.BuildStateInProgress = "inProgress";
 exports.BuildStateCompleted = "completed";
+exports.BuildStateCancelling = "cancelling";
 exports.BuildResultSucceeded = "succeeded";
 exports.BuildResultPartiallySucceeded = "partiallySucceeded";
 exports.TestRunStateCompleted = "Completed";
@@ -217,6 +218,34 @@ var TfsRestService = (function () {
                         _i++;
                         return [3, 1];
                     case 4: return [2, result];
+                }
+            });
+        });
+    };
+    TfsRestService.prototype.cancelBuild = function (buildId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var buildInfo, queueBuildUrl, queueBuildBody, result;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4, this.getBuildInfo(buildId)];
+                    case 1:
+                        buildInfo = _a.sent();
+                        if (buildInfo.status === exports.BuildStateCompleted) {
+                            console.log("Build " + buildId + " has already finished.");
+                            return [2];
+                        }
+                        buildInfo.status = exports.BuildStateCancelling;
+                        queueBuildUrl = "build/builds/" + buildId + "?api-version=2.0";
+                        queueBuildBody = JSON.stringify(buildInfo);
+                        this.logDebug("Sending Request to following url:");
+                        this.logDebug(queueBuildUrl);
+                        this.logDebug("Request Body: " + queueBuildBody);
+                        return [4, WebRequest.patch(queueBuildUrl, this.options, queueBuildBody)];
+                    case 2:
+                        result = _a.sent();
+                        this.logDebug("Result");
+                        this.logDebug(JSON.stringify(result));
+                        return [2];
                 }
             });
         });

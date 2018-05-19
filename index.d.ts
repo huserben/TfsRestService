@@ -16,6 +16,7 @@ export declare const AuthenticationMethodPersonalAccessToken: string;
 export declare const BuildStateNotStarted: string;
 export declare const BuildStateInProgress: string;
 export declare const BuildStateCompleted: string;
+export declare const BuildStateCancelling: string;
 export declare const BuildResultSucceeded: string;
 export declare const BuildResultPartiallySucceeded: string;
 export declare const TestRunStateCompleted: string;
@@ -48,6 +49,7 @@ export interface ITfsRestService {
     getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<ITestRun[]>;
     getTestResults(testRun: ITestRun): Promise<ITestResult[]>;
     getAssociatedChanges(build: IBuild): Promise<IChange[]>;
+    cancelBuild(buildId: string): Promise<void>;
 }
 export interface ITestRun {
     id: number;
@@ -86,6 +88,7 @@ export declare class TfsRestService implements ITfsRestService {
     getBuildsByStatus(buildDefinitionName: string, statusFilter: string): Promise<IBuild[]>;
     triggerBuild(buildDefinitionName: string, branch: string, requestedForUserID: string, sourceVersion: string, demands: string[], queueId: number, buildParameters: string): Promise<string>;
     areBuildsFinished(triggeredBuilds: string[], failIfNotSuccessful: boolean, treatPartiallySucceededBuildAsSuccessful: boolean): Promise<boolean>;
+    cancelBuild(buildId: string): Promise<void>;
     downloadArtifacts(buildId: string, downloadDirectory: string): Promise<void>;
     getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<ITestRun[]>;
     getTestResults(testRun: ITestRun): Promise<ITestResult[]>;
