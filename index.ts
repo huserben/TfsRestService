@@ -330,10 +330,10 @@ export class TfsRestService implements ITfsRestService {
             return;
         }
 
-        buildInfo.status = BuildStateCancelling;
+        var requestBody: any = { status: BuildStateCancelling };
 
         var queueBuildUrl: string = `build/builds/${buildId}?api-version=2.0`;
-        var queueBuildBody: string = JSON.stringify(buildInfo);
+        var queueBuildBody: string = JSON.stringify(requestBody);
 
         this.logDebug("Sending Request to following url:");
         this.logDebug(queueBuildUrl);

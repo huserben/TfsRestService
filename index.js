@@ -224,7 +224,7 @@ var TfsRestService = (function () {
     };
     TfsRestService.prototype.cancelBuild = function (buildId) {
         return __awaiter(this, void 0, void 0, function () {
-            var buildInfo, queueBuildUrl, queueBuildBody, result;
+            var buildInfo, requestBody, queueBuildUrl, queueBuildBody, result;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4, this.getBuildInfo(buildId)];
@@ -234,9 +234,9 @@ var TfsRestService = (function () {
                             console.log("Build " + buildId + " has already finished.");
                             return [2];
                         }
-                        buildInfo.status = exports.BuildStateCancelling;
+                        requestBody = { status: exports.BuildStateCancelling };
                         queueBuildUrl = "build/builds/" + buildId + "?api-version=2.0";
-                        queueBuildBody = JSON.stringify(buildInfo);
+                        queueBuildBody = JSON.stringify(requestBody);
                         this.logDebug("Sending Request to following url:");
                         this.logDebug(queueBuildUrl);
                         this.logDebug("Request Body: " + queueBuildBody);
