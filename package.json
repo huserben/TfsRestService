@@ -19,8 +19,9 @@
   "license": "MIT",
   "homepage": "https://github.com/huserben/TfsRestService#readme",
   "dependencies": {
+    "@types/vso-node-api": "^4.0.0",
     "linqts": "1.10.0",
-    "web-request": "^1.0.7"
+    "vso-node-api": "^6.5.0"
   },
   "devDependencies": {
     "@types/mocha": "^2.2.44",

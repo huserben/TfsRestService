@@ -1,4 +1,8 @@
-import * as WebRequest from "web-request";
+import { ITestApi } from "./node_modules/vso-node-api/TestApi";
+import { IBuildApi } from "./node_modules/vso-node-api/BuildApi";
+import { Build, BuildStatus, Change } from "./node_modules/vso-node-api/interfaces/BuildInterfaces";
+import { TestRun } from "./node_modules/vso-node-api/interfaces/TestInterfaces";
+import { ITaskAgentApi } from "./node_modules/vso-node-api/TaskAgentApi";
 export declare const TeamFoundationCollectionUri: string;
 export declare const TeamProject: string;
 export declare const RequestedForUsername: string;
@@ -13,94 +17,43 @@ export declare const ApiUrl: string;
 export declare const AuthenticationMethodOAuthToken: string;
 export declare const AuthenticationMethodBasicAuthentication: string;
 export declare const AuthenticationMethodPersonalAccessToken: string;
-export declare const BuildStateNotStarted: string;
-export declare const BuildStateInProgress: string;
-export declare const BuildStateCompleted: string;
-export declare const BuildStateCancelling: string;
-export declare const BuildResultSucceeded: string;
-export declare const BuildResultPartiallySucceeded: string;
-export declare const TestRunStateCompleted: string;
-export declare const TestRunOutcomePassed: string;
-export interface IBuild {
-    name: string;
-    id: string;
-    result: string;
-    status: string;
-    definition: {
-        name: string;
-    };
-    _links: {
-        web: {
-            href: string;
-        };
-    };
-}
 export interface ITfsRestService {
-    initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, ignoreSslError: boolean): void;
-    getBuildsByStatus(buildDefinitionName: string, statusFilter: string): Promise<IBuild[]>;
-    triggerBuild(buildDefinitionName: string, branch: string, requestedFor: string, sourceVersion: string, demands: string[], queueId: number, buildParameters: string): Promise<string>;
-    downloadArtifacts(buildId: string, downloadDirectory: string): Promise<void>;
+    initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, teamProject: string, ignoreSslError: boolean): Promise<void>;
+    getBuildsByStatus(buildDefinitionName: string, statusFilter: BuildStatus): Promise<Build[]>;
+    triggerBuild(buildDefinitionName: string, branch: string, requestedFor: string, sourceVersion: string, demands: string[], queueId: number, buildParameters: string): Promise<Build>;
+    downloadArtifacts(buildId: number, downloadDirectory: string): Promise<void>;
     getQueueIdByName(buildQueue: string): Promise<number>;
-    getBuildInfo(buildId: string): Promise<IBuild>;
-    areBuildsFinished(triggeredBuilds: string[], failIfNotSuccessful: boolean, failIfPartiallySucceeded: boolean): Promise<boolean>;
-    isBuildFinished(buildId: string): Promise<boolean>;
-    wasBuildSuccessful(buildId: string): Promise<boolean>;
-    getBuildDefinitionId(buildDefinitionName: string): Promise<string>;
-    getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<ITestRun[]>;
-    getTestResults(testRun: ITestRun): Promise<ITestResult[]>;
-    getAssociatedChanges(build: IBuild): Promise<IChange[]>;
-    cancelBuild(buildId: string): Promise<void>;
-}
-export interface ITestRun {
-    id: number;
-    buildConfiguration: {
-        id: number;
-        buildDefinitionId: string;
-    };
-    runStatistics: [{
-        state: string;
-        outcome: string;
-    }];
-}
-export interface ITestResult {
-    state: string;
-    outcome: string;
-    durationInMs: number;
-    testCaseTitle: string;
-    startedDate: string;
-}
-export interface IChange {
-    id: string;
-    message: string;
-    type: string;
-    author: {
-        id: string;
-        displayName: string;
-    };
-    location: string;
+    getBuildInfo(buildId: number): Promise<Build>;
+    areBuildsFinished(triggeredBuilds: number[], failIfNotSuccessful: boolean, failIfPartiallySucceeded: boolean): Promise<boolean>;
+    isBuildFinished(buildId: number): Promise<boolean>;
+    wasBuildSuccessful(buildId: number): Promise<boolean>;
+    getBuildDefinitionId(buildDefinitionName: string): Promise<number>;
+    getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<TestRun[]>;
+    getAssociatedChanges(build: Build): Promise<Change[]>;
+    cancelBuild(buildId: number): Promise<void>;
 }
 export declare class TfsRestService implements ITfsRestService {
-    options: WebRequest.RequestOptions;
+    vstsBuildApi: IBuildApi;
+    vstsTestApi: ITestApi;
+    taskAgentApi: ITaskAgentApi;
+    teamProjectId: string;
     isDebug: boolean;
     logDebugFunction: (message: string) => void;
     constructor(debug?: boolean, logDebugFunction?: (message: string) => void);
-    initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, ignoreSslError: boolean): void;
-    getBuildsByStatus(buildDefinitionName: string, statusFilter: string): Promise<IBuild[]>;
-    triggerBuild(buildDefinitionName: string, branch: string, requestedForUserID: string, sourceVersion: string, demands: string[], queueId: number, buildParameters: string): Promise<string>;
-    areBuildsFinished(triggeredBuilds: string[], failIfNotSuccessful: boolean, treatPartiallySucceededBuildAsSuccessful: boolean): Promise<boolean>;
-    cancelBuild(buildId: string): Promise<void>;
-    downloadArtifacts(buildId: string, downloadDirectory: string): Promise<void>;
-    getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<ITestRun[]>;
-    getTestResults(testRun: ITestRun): Promise<ITestResult[]>;
+    initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, teamProject: string, ignoreSslError: boolean): Promise<void>;
+    getBuildsByStatus(buildDefinitionName: string, statusFilter: BuildStatus): Promise<Build[]>;
+    triggerBuild(buildDefinitionName: string, branch: string, requestedForUserID: string, sourceVersion: string, demands: string[], queueId: number, buildParameters: string): Promise<Build>;
+    areBuildsFinished(triggeredBuilds: number[], failIfNotSuccessful: boolean, treatPartiallySucceededBuildAsSuccessful: boolean): Promise<boolean>;
+    cancelBuild(buildId: number): Promise<void>;
+    downloadArtifacts(buildId: number, downloadDirectory: string): Promise<void>;
+    getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<TestRun[]>;
     getQueueIdByName(buildQueue: string): Promise<number>;
-    isBuildFinished(buildId: string): Promise<boolean>;
-    wasBuildSuccessful(buildId: string): Promise<boolean>;
-    getBuildDefinitionId(buildDefinitionName: string): Promise<string>;
-    getAssociatedChanges(build: IBuild): Promise<IChange[]>;
-    getBuildInfo(buildId: string): Promise<IBuild>;
-    private sendGetRequest<T>(requestUrl);
-    private handleFailedQueueRequest(responseAsJson);
-    private logValidationResults(validationResults);
-    private throwIfAuthenticationError<T>(result);
-    private logDebug(message);
+    isBuildFinished(buildId: number): Promise<boolean>;
+    wasBuildSuccessful(buildId: number): Promise<boolean>;
+    getBuildDefinitionId(buildDefinitionName: string): Promise<number>;
+    getAssociatedChanges(build: Build): Promise<Change[]>;
+    getBuildInfo(buildId: number): Promise<Build>;
+    private buildParameterString(buildParameters);
+    private cleanValue(value);
+    escapeParametersForRequestBody(value: string): string;
 }

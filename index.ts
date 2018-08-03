@@ -1,7 +1,20 @@
-import * as WebRequest from "web-request";
 import * as fs from "fs";
 import * as url from "url";
 import { List } from "linqts";
+import * as vsts from "vso-node-api";
+/*import * as ba from "vso-node-api/BuildApi";
+import * as bi from "vso-node-api/interfaces/BuildInterfaces";
+import * as ti from "vso-node-api/interfaces/TestInterfaces";*/
+
+import { IRequestHandler, IRequestOptions } from "./node_modules/vso-node-api/interfaces/common/VsoBaseInterfaces";
+import { ICoreApi } from "./node_modules/vso-node-api/CoreApi";
+import { TeamProjectReference } from "./node_modules/vso-node-api/interfaces/CoreInterfaces";
+import { ITestApi } from "./node_modules/vso-node-api/TestApi";
+import { IBuildApi } from "./node_modules/vso-node-api/BuildApi";
+import { Build, BuildStatus, Change, BuildResult, BuildArtifact, BuildDefinitionReference } from "./node_modules/vso-node-api/interfaces/BuildInterfaces";
+import { TestRun, RunStatistic, TestRunState } from "./node_modules/vso-node-api/interfaces/TestInterfaces";
+import { ITaskAgentApi } from "./node_modules/vso-node-api/TaskAgentApi";
+import { TaskAgentQueue } from "./node_modules/vso-node-api/interfaces/TaskAgentInterfaces";
 
 export const TeamFoundationCollectionUri: string = "SYSTEM_TEAMFOUNDATIONCOLLECTIONURI";
 export const TeamProject: string = "SYSTEM_TEAMPROJECT";
@@ -24,35 +37,11 @@ export const AuthenticationMethodOAuthToken: string = "OAuth Token";
 export const AuthenticationMethodBasicAuthentication: string = "Basic Authentication";
 export const AuthenticationMethodPersonalAccessToken: string = "Personal Access Token";
 
-export const BuildStateNotStarted: string = "notStarted";
-export const BuildStateInProgress: string = "inProgress";
-export const BuildStateCompleted: string = "completed";
-export const BuildStateCancelling: string = "cancelling";
-export const BuildResultSucceeded: string = "succeeded";
-export const BuildResultPartiallySucceeded: string = "partiallySucceeded";
-
-export const TestRunStateCompleted: string = "Completed";
-export const TestRunOutcomePassed: string = "Passed";
-
-/* Interfaces that are exported */
-export interface IBuild {
-    name: string;
-    id: string;
-    result: string;
-    status: string;
-    definition: {
-        name: string;
-    };
-    _links: {
-        web: {
-            href: string;
-        };
-    };
-}
-
 export interface ITfsRestService {
-    initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, ignoreSslError: boolean): void;
-    getBuildsByStatus(buildDefinitionName: string, statusFilter: string): Promise<IBuild[]>;
+    initialize(
+        authenticationMethod: string, username: string, password: string, tfsServer: string, teamProject: string, ignoreSslError: boolean):
+        Promise<void>;
+    getBuildsByStatus(buildDefinitionName: string, statusFilter: BuildStatus): Promise<Build[]>;
     triggerBuild(
         buildDefinitionName: string,
         branch: string,
@@ -60,104 +49,25 @@ export interface ITfsRestService {
         sourceVersion: string,
         demands: string[],
         queueId: number,
-        buildParameters: string): Promise<string>;
-    downloadArtifacts(buildId: string, downloadDirectory: string): Promise<void>;
+        buildParameters: string): Promise<Build>;
+    downloadArtifacts(buildId: number, downloadDirectory: string): Promise<void>;
     getQueueIdByName(buildQueue: string): Promise<number>;
-    getBuildInfo(buildId: string): Promise<IBuild>;
-    areBuildsFinished(triggeredBuilds: string[], failIfNotSuccessful: boolean, failIfPartiallySucceeded: boolean): Promise<boolean>;
-    isBuildFinished(buildId: string): Promise<boolean>;
-    wasBuildSuccessful(buildId: string): Promise<boolean>;
-    getBuildDefinitionId(buildDefinitionName: string): Promise<string>;
-    getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<ITestRun[]>;
-    getTestResults(testRun: ITestRun): Promise<ITestResult[]>;
-    getAssociatedChanges(build: IBuild): Promise<IChange[]>;
-    cancelBuild(buildId: string): Promise<void>;
-}
-
-export interface ITestRun {
-    id: number;
-    buildConfiguration: {
-        id: number;
-        buildDefinitionId: string;
-    };
-    runStatistics: [{
-        state: string;
-        outcome: string;
-    }];
-}
-
-export interface ITestResult {
-    state: string;
-    outcome: string;
-    durationInMs: number;
-    testCaseTitle: string;
-    startedDate: string;
-}
-
-export interface IChange {
-    id: string;
-    message: string;
-    type: string;
-    author: {
-        id: string;
-        displayName: string;
-    };
-    location: string;
-}
-// internally used interfaces for json objects returned by REST request.
-interface ITfsGetResponse<T> {
-    count: number;
-    value: T[];
-}
-
-interface IQueue {
-    id: number;
-    name: string;
-}
-
-interface IArtifact {
-    id: string;
-    name: string;
-    resource: IArtifactResource;
-}
-
-interface IArtifactResource {
-    downloadUrl: string;
-    type: string;
-}
-
-interface IValidationResult {
-    result: string;
-    message: string;
-}
-
-interface ITestRunSummary {
-    id: number;
-    name: string;
-    startedDate: string;
-    state: string;
-}
-
-interface IQueueBuildBody {
-    definition: {
-        id: number
-    };
-    sourceBranch: string;
-    requestedFor: {
-        id: string
-    };
-    sourceVersion: string;
-    queue: {
-        id: number
-    };
-    demands: string[];
-
-    formatBuildParameters(buildParmeters: string): string;
+    getBuildInfo(buildId: number): Promise<Build>;
+    areBuildsFinished(triggeredBuilds: number[], failIfNotSuccessful: boolean, failIfPartiallySucceeded: boolean): Promise<boolean>;
+    isBuildFinished(buildId: number): Promise<boolean>;
+    wasBuildSuccessful(buildId: number): Promise<boolean>;
+    getBuildDefinitionId(buildDefinitionName: string): Promise<number>;
+    getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<TestRun[]>;
+    getAssociatedChanges(build: Build): Promise<Change[]>;
+    cancelBuild(buildId: number): Promise<void>;
 }
 
 /* Tfs Rest Service Implementation */
 export class TfsRestService implements ITfsRestService {
-    options: WebRequest.RequestOptions = {};
+    vstsBuildApi: IBuildApi = null;
+    vstsTestApi: ITestApi = null;
+    taskAgentApi: ITaskAgentApi = null;
+    teamProjectId: string = "";
     isDebug: boolean = false;
     logDebugFunction: (message: string) => void;
 
@@ -166,61 +76,57 @@ export class TfsRestService implements ITfsRestService {
         this.logDebugFunction = logDebugFunction;
     }
 
-    public initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, ignoreSslError: boolean): void {
-        var baseUrl: string = `${encodeURI(tfsServer)}/${ApiUrl}/`;
+    public async initialize(
+        authenticationMethod: string, username: string, password: string, tfsServer: string, teamProject: string, ignoreSslError: boolean):
+        Promise<void> {
+        let authHandler: IRequestHandler;
 
         switch (authenticationMethod) {
             case AuthenticationMethodOAuthToken:
                 console.log("Using OAuth Access Token");
-                this.options = {
-                    auth: {
-                        bearer: password
-                    }
-                };
+                authHandler = vsts.getBearerHandler(password);
                 break;
             case AuthenticationMethodBasicAuthentication:
                 console.log("Using Basic Authentication");
-                this.options = {
-                    auth: {
-                        user: username,
-                        password: password
-                    }
-                };
-
+                authHandler = vsts.getBasicHandler(username, password);
                 break;
             case AuthenticationMethodPersonalAccessToken:
                 console.log("Using Personal Access Token");
-
-                this.options = {
-                    auth: {
-                        user: "whatever",
-                        password: password
-                    }
-                };
+                authHandler = vsts.getHandlerFromToken(password);
                 break;
             default:
                 throw new Error("Cannot handle authentication method " + authenticationMethod);
         }
 
-        this.options.headers = {
-            "Content-Type": "application/json"
+        let authOptions: IRequestOptions = {
+            ignoreSslError: ignoreSslError
         };
-        this.options.baseUrl = baseUrl;
-        this.options.agentOptions = { rejectUnauthorized: !ignoreSslError };
-        this.options.encoding = "utf-8";
-        this.options.throwResponseError = true;
+
+        let connection: vsts.WebApi = new vsts.WebApi(tfsServer, authHandler, authOptions);
+        this.vstsBuildApi = await connection.getBuildApi();
+        this.vstsTestApi = await connection.getTestApi();
+        this.taskAgentApi = await connection.getTaskAgentApi();
+        var coreApi: ICoreApi = await connection.getCoreApi();
+
+        var projects: TeamProjectReference[] = await coreApi.getProjects();
+        projects.forEach(project => {
+            if (project.name === teamProject) {
+                this.teamProjectId = project.id;
+            }
+        });
+
+        if (this.teamProjectId === "") {
+            throw new Error(`Could not find any Team Project with name ${teamProject}`);
+        }
     }
 
-    public async getBuildsByStatus(buildDefinitionName: string, statusFilter: string): Promise<IBuild[]> {
-        var buildDefinitionID: string = await this.getBuildDefinitionId(buildDefinitionName);
+    public async getBuildsByStatus(buildDefinitionName: string, statusFilter: BuildStatus): Promise<Build[]> {
+        var buildDefinitionID: number = await this.getBuildDefinitionId(buildDefinitionName);
 
-        var requestUrl: string =
-            `build/builds?api-version=2.0&definitions=${buildDefinitionID}&statusFilter=${statusFilter}`;
+        var result: Build[] = await this.vstsBuildApi.getBuilds(
+            this.teamProjectId, [buildDefinitionID], null, null, null, null, null, null, statusFilter);
 
-        var result: ITfsGetResponse<IBuild> =
-            await this.sendGetRequest<ITfsGetResponse<IBuild>>(requestUrl);
-
-        return result.value;
+        return result;
     }
 
     public async triggerBuild(
@@ -230,87 +136,39 @@ export class TfsRestService implements ITfsRestService {
         sourceVersion: string,
         demands: string[],
         queueId: number,
-        buildParameters: string): Promise<string> {
-        var buildId: string = await this.getBuildDefinitionId(buildDefinitionName);
-        var queueBuildUrl: string = "build/builds?api-version=2.0&ignoreWarnings=true";
+        buildParameters: string): Promise<Build> {
+        var buildId: number = await this.getBuildDefinitionId(buildDefinitionName);
 
-        var queueBuildBody: IQueueBuildBody = new QueueBuildBody(parseInt(buildId, 10));
+        var buildToTrigger: any = {
+            definition: { id: buildId },
+            demands: demands,
+            sourceVersion: sourceVersion,
+            SourceBranch: branch,
+            queue: { id: queueId },
+            requestedFor: { id: requestedForUserID },
+            parameters: this.buildParameterString(buildParameters)
+        };
 
-        if (branch !== null) {
-            queueBuildBody.sourceBranch = branch;
-        }
+        var result: Build = await this.vstsBuildApi.queueBuild(buildToTrigger, this.teamProjectId, true);
 
-        if (requestedForUserID !== undefined && requestedForUserID !== "") {
-            queueBuildBody.requestedFor = { id: requestedForUserID };
-        }
-
-        if (sourceVersion !== undefined && sourceVersion !== "") {
-            queueBuildBody.sourceVersion = sourceVersion;
-        }
-
-        if (queueId !== null && queueId !== undefined) {
-            queueBuildBody.queue = { id: queueId };
-        }
-
-        if (demands !== null && demands.length > 0) {
-            queueBuildBody.demands = [];
-            demands.forEach(demand => queueBuildBody.demands.push(demand));
-        }
-
-        var escapedBuildBody: string = JSON.stringify(queueBuildBody);
-
-        // parameters should not be escaped like the rest due to the special syntax...
-        if (buildParameters !== null) {
-            // remove last "}" and instead add the parameter attribute
-            var splittedBody: string[] = escapedBuildBody.split("");
-            var formatBuildParameters: string = queueBuildBody.formatBuildParameters(buildParameters);
-
-            splittedBody.splice(splittedBody.lastIndexOf("}"), 1, `, ${formatBuildParameters}}`);
-            escapedBuildBody = splittedBody.join("");
-        }
-
-        console.log(`Queue new Build for definition ${buildDefinitionName}`);
-        this.logDebug("Sending Request to following url:");
-        this.logDebug(queueBuildUrl);
-        this.logDebug(`Request Body: ${escapedBuildBody}`);
-
-        var result: WebRequest.Response<string> = await WebRequest.post(queueBuildUrl, this.options, escapedBuildBody);
-
-        this.logDebug("Result");
-        this.logDebug(JSON.stringify(result));
-
-        var responseAsJson: any = JSON.parse(result.content);
-        var triggeredBuildID: string = responseAsJson.id;
-
-        // if we are not able to fetch the expected JSON it means something went wrong and we got back some exception from TFS.
-        if (triggeredBuildID === undefined) {
-            this.handleFailedQueueRequest(responseAsJson);
-        } else {
-            var validationResults: IValidationResult[] = responseAsJson.validationResults;
-            if (validationResults !== undefined) {
-                this.logValidationResults(validationResults);
-            }
-        }
-
-
-        return triggeredBuildID;
+        return result;
     }
 
     public async areBuildsFinished(
-        triggeredBuilds: string[], failIfNotSuccessful: boolean, treatPartiallySucceededBuildAsSuccessful: boolean): Promise<boolean> {
+        triggeredBuilds: number[], failIfNotSuccessful: boolean, treatPartiallySucceededBuildAsSuccessful: boolean): Promise<boolean> {
         var result: boolean = true;
         for (let queuedBuildId of triggeredBuilds) {
-            var buildInfo: IBuild = await this.getBuildInfo(queuedBuildId);
-            var buildFinished: boolean = buildInfo.status === BuildStateCompleted;
+            var buildInfo: Build = await this.getBuildInfo(queuedBuildId);
+            var buildFinished: boolean = buildInfo.status === BuildStatus.Completed;
 
             if (!buildFinished) {
                 result = false;
             } else {
                 result = result && true;
-                var buildSuccessful: boolean = buildInfo.result === BuildResultSucceeded;
+                var buildSuccessful: boolean = buildInfo.result === BuildResult.Succeeded;
 
                 if (!buildSuccessful && treatPartiallySucceededBuildAsSuccessful) {
-                    buildSuccessful = buildInfo.result === BuildResultPartiallySucceeded;
+                    buildSuccessful = buildInfo.result === BuildResult.PartiallySucceeded;
                 }
 
                 if (failIfNotSuccessful && !buildSuccessful) {
@@ -322,30 +180,20 @@ export class TfsRestService implements ITfsRestService {
         return result;
     }
 
-    public async cancelBuild(buildId: string): Promise<void> {
-        var buildInfo: IBuild = await this.getBuildInfo(buildId);
+    public async cancelBuild(buildId: number): Promise<void> {
+        var buildInfo: Build = await this.getBuildInfo(buildId);
 
-        if (buildInfo.status === BuildStateCompleted) {
+        if (buildInfo.status === BuildStatus.Completed) {
             console.log(`Build ${buildId} has already finished.`);
             return;
         }
 
-        var requestBody: any = { status: BuildStateCancelling };
+        var requestBody: any = { status: BuildStatus.Cancelling };
 
-        var queueBuildUrl: string = `build/builds/${buildId}?api-version=2.0`;
-        var queueBuildBody: string = JSON.stringify(requestBody);
-
-        this.logDebug("Sending Request to following url:");
-        this.logDebug(queueBuildUrl);
-        this.logDebug(`Request Body: ${queueBuildBody}`);
-
-        var result: WebRequest.Response<string> = await WebRequest.patch(queueBuildUrl, this.options, queueBuildBody);
-
-        this.logDebug("Result");
-        this.logDebug(JSON.stringify(result));
+        this.vstsBuildApi.updateBuild(requestBody, buildId, this.teamProjectId);
     }
 
-    public async downloadArtifacts(buildId: string, downloadDirectory: string): Promise<void> {
+    public async downloadArtifacts(buildId: number, downloadDirectory: string): Promise<void> {
         console.log(`Downloading artifacts for ${buildId}`);
 
         if (!fs.existsSync(downloadDirectory)) {
@@ -357,17 +205,16 @@ export class TfsRestService implements ITfsRestService {
             downloadDirectory += "\\";
         }
 
-        var requestUrl: string = `build/builds/${buildId}/artifacts`;
 
-        var result: ITfsGetResponse<IArtifact> = await this.sendGetRequest<ITfsGetResponse<IArtifact>>(requestUrl);
+        var result: BuildArtifact[] = await this.vstsBuildApi.getArtifacts(buildId, this.teamProjectId);
 
-        if (result.count === undefined) {
+        if (result.length === 0) {
             console.log(`No artifacts found for build ${buildId} - skipping...`);
         }
 
-        console.log(`Found ${result.count} artifact(s)`);
+        console.log(`Found ${result.length} artifact(s)`);
 
-        for (let artifact of result.value) {
+        for (let artifact of result) {
             if (artifact.resource.type !== "Container") {
                 console.log(`Cannot download artifact ${artifact.name}. Only Containers are supported (type is \"${artifact.resource.type}\"`);
                 continue;
@@ -391,247 +238,95 @@ export class TfsRestService implements ITfsRestService {
                 index++;
             }
 
-            var fileRequestOptions: WebRequest.RequestOptions = {};
-            fileRequestOptions.auth = this.options.auth;
-            fileRequestOptions.baseUrl = "";
-            fileRequestOptions.agentOptions = { rejectUnauthorized: this.options.agentOptions.rejectUnauthorized };
-            fileRequestOptions.headers = {
-                "Content-Type": `application/${fileFormat}`
-            };
-            fileRequestOptions.encoding = null;
-
-            var request: WebRequest.Request<void> = await WebRequest.stream(artifact.resource.downloadUrl, fileRequestOptions);
-            await request.pipe(fs.createWriteStream(downloadDirectory + fileName));
-
-            console.log(`Stored artifact here: ${downloadDirectory}${fileName}`);
+            const artifactStream: NodeJS.ReadableStream = await this.vstsBuildApi.getArtifactContentZip(
+                buildId, artifact.name, this.teamProjectId);
+            const fileStream: any = fs.createWriteStream(downloadDirectory + fileName);
+            artifactStream.pipe(fileStream);
+            fileStream.on("close", () => {
+                console.log(`Stored artifact here: ${downloadDirectory}${fileName}`);
+            });
         }
     }
 
-    public async getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<ITestRun[]> {
-        var testRunsUrl: string = `test/runs`;
-
-        var testRunSummaries: ITfsGetResponse<ITestRunSummary> =
-            await WebRequest.json<ITfsGetResponse<ITestRunSummary>>(testRunsUrl, this.options);
-        this.throwIfAuthenticationError(testRunSummaries);
-
-        var testRunsToReturn: ITestRun[] = [];
+    public async getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<TestRun[]> {
+        var testRunSummaries: TestRun[] = await this.vstsTestApi.getTestRuns(this.teamProjectId);
 
         // reverse to fetch newest to oldest.
-        let testSummariesToGetResultsFor: ITestRunSummary[] = new List<ITestRunSummary>(testRunSummaries.value)
+        let testRuns: TestRun[] = new List<TestRun>(testRunSummaries)
             .Reverse()
-            .Where(x => x !== undefined && x.state.toLowerCase() === TestRunStateCompleted.toLowerCase()
+            .Where(x => x !== undefined && x.state === TestRunState.Completed.toString()
                 && x.name === testRunName)
+            .Take(numberOfRunsToFetch)
             .ToArray();
 
-        for (let testSummary of testSummariesToGetResultsFor) {
-            var testRun: ITestRun = await WebRequest.json<ITestRun>(`${testRunsUrl}/${testSummary.id}`, this.options);
-
-            testRunsToReturn.push(testRun);
-
-            if (testRunsToReturn.length >= numberOfRunsToFetch) {
-                break;
-            }
-        }
-
         // reverse again to get the matching test runs orderd from oldest to newest.
-        return testRunsToReturn.reverse();
-    }
-
-    public async getTestResults(testRun: ITestRun): Promise<ITestResult[]> {
-        var requestUrl: string = `test/runs/${testRun.id}/results`;
-
-        var results: ITfsGetResponse<ITestResult> = await WebRequest.json<ITfsGetResponse<ITestResult>>(requestUrl, this.options);
-
-        this.throwIfAuthenticationError(results);
-
-        return results.value;
+        return testRuns.reverse();
     }
 
     public async getQueueIdByName(buildQueue: string): Promise<number> {
-        var requestUrl: string = `distributedtask/queues`;
+        var agentQueues: TaskAgentQueue[] = await this.taskAgentApi.getAgentQueues(this.teamProjectId, buildQueue);
 
-        var result: ITfsGetResponse<IQueue> = await this.sendGetRequest<ITfsGetResponse<IQueue>>(requestUrl);
-        this.throwIfAuthenticationError(result);
-
-        for (let queue of result.value) {
-            if (queue.name.toLowerCase() === buildQueue.toLowerCase()) {
-                return queue.id;
-            }
+        if (agentQueues.length === 1) {
+            var agentQueue : TaskAgentQueue = agentQueues[0];
+            return agentQueue.id;
         }
 
         console.error(`No queue found with the name: ${buildQueue}. Following Queues were found (Name (id)):`);
-        for (let queue of result.value) {
+        for (let queue of agentQueues) {
             console.error(`${queue.name} (${queue.id})`);
         }
 
         throw new Error(`Could not find any Queue with the name ${buildQueue}`);
     }
 
-    public async isBuildFinished(buildId: string): Promise<boolean> {
-        var result: IBuild = await this.getBuildInfo(buildId);
+    public async isBuildFinished(buildId: number): Promise<boolean> {
+        var result: Build = await this.getBuildInfo(buildId);
 
-        return result.status === BuildStateCompleted;
+        return result.status === BuildStatus.Completed;
     }
 
-    public async wasBuildSuccessful(buildId: string): Promise<boolean> {
-        var result: IBuild = await this.getBuildInfo(buildId);
+    public async wasBuildSuccessful(buildId: number): Promise<boolean> {
+        var result: Build = await this.getBuildInfo(buildId);
 
-        return result.result === BuildResultSucceeded;
+        return result.result === BuildResult.Succeeded;
     }
 
-    public async getBuildDefinitionId(buildDefinitionName: string): Promise<string> {
-        var requestUrl: string = `build/definitions?api-version=2.0&name=${encodeURIComponent(buildDefinitionName)}`;
+    public async getBuildDefinitionId(buildDefinitionName: string): Promise<number> {
 
-        var result: ITfsGetResponse<IBuild> =
-            await this.sendGetRequest<ITfsGetResponse<IBuild>>(requestUrl);
+        var result: BuildDefinitionReference[] = await this.vstsBuildApi.getDefinitions(this.teamProjectId, buildDefinitionName);
 
-        this.throwIfAuthenticationError(result);
-
-        if (result.count === 0) {
-            throw new Error(`Did not find any build definition with this name: ${buildDefinitionName}
-            - checked following url: ${this.options.baseUrl}${requestUrl}`);
+        if (result.length === 0) {
+            throw new Error(`Did not find any build definition with this name: ${buildDefinitionName}`);
         }
 
-        return result.value[0].id;
+        return result[0].id;
     }
 
-    public async getAssociatedChanges(build: IBuild): Promise<IChange[]> {
-        var requestUrl: string = `build/builds/${build.id}/changes?api-version=2.0`;
-        var result: ITfsGetResponse<IChange> = await this.sendGetRequest<ITfsGetResponse<IChange>>(requestUrl);
-
-        this.throwIfAuthenticationError(result);
-
-        return result.value;
+    public async getAssociatedChanges(build: Build): Promise<Change[]> {
+        var result: Change[] = await this.vstsBuildApi.getBuildChanges(this.teamProjectId, build.id);
+        return result;
     }
 
-    public async getBuildInfo(buildId: string): Promise<IBuild> {
-        var requestUrl: string = `build/builds/${buildId}?api-version=2.0`;
+    public async getBuildInfo(buildId: number): Promise<Build> {
 
-        var buildInfo: IBuild = await this.sendGetRequest<IBuild>(requestUrl);
-        return buildInfo;
+        var build: Build = await this.vstsBuildApi.getBuild(buildId, this.teamProjectId);
+        return build;
     }
 
-    private async sendGetRequest<T>(requestUrl: string): Promise<T> {
-        var retryIndex: number = 1;
-        this.logDebug("Sending Request to following url:");
-        this.logDebug(requestUrl);
-
-        var requestError: string = "";
-
-        while (retryIndex < 6) {
-            try {
-                var result: T =
-                    await WebRequest.json<T>(requestUrl, this.options);
-
-                this.logDebug("Result:");
-                this.logDebug(JSON.stringify(result));
-
-                return result;
-            } catch (error) {
-                this.logDebug(`An error happened during the request (Try ${retryIndex}/5)`);
-                this.logDebug(error);
-
-                requestError = error;
-                retryIndex++;
-            }
-        }
-
-        console.log("Request was not successful.");
-        console.log(requestError);
-    }
-
-    private handleFailedQueueRequest(responseAsJson: any): void {
-        var validationResults: IValidationResult[] = responseAsJson.ValidationResults;
-        if (validationResults === undefined) {
-            // in case something else failed try fetch just a message:
-            var errorMessage: string = responseAsJson.message;
-
-            if (errorMessage !== undefined) {
-                console.error(errorMessage);
-            } else {
-                console.error("Unknown error - printing complete return value from server.");
-                console.error(`Consider raising an issue at github if problem cannot be solved.`);
-                console.error(responseAsJson);
-            }
-        } else {
-            console.error("Could not queue the build because there were validation errors or warnings.");
-        }
-
-        throw new Error(`Could not Trigger build. See console for more Information.`);
-    }
-
-    private logValidationResults(validationResults: IValidationResult[]): void {
-        if (validationResults === undefined) {
-            return;
-        }
-
-        validationResults.forEach(validation => {
-            if (validation.result === "error") {
-                console.error(`${validation.result}: ${validation.message}`);
-            } else if (validation.result === "warning") {
-                console.log(`${validation.result}: ${validation.message}`);
-            }
-        });
-    }
-
-    private throwIfAuthenticationError<T>(result: ITfsGetResponse<T>): void {
-        if (result === undefined || result.value === undefined) {
-            console.log("Authentication failed - please make sure your settings are correct.");
-            console.log("If you use the OAuth Token, make sure you enabled the access to it on the Build Definition.");
-            console.log("If you use a Personal Access Token, make sure it did not expire.");
-            console.log("If you use Basic Authentication, make sure alternate credentials are enabled on your TFS/VSTS.");
-
-            throw new Error(`Authentication with TFS Server failed. Please check your settings.`);
-        }
-    }
-
-    private logDebug(message: any): void {
-        if (this.isDebug) {
-            if (this.logDebugFunction !== undefined) {
-                this.logDebugFunction(message);
-            } else {
-                console.log(`###DEBUG: ${message}`);
-            }
-        }
-    }
-}
-
-class QueueBuildBody implements IQueueBuildBody {
-
-    constructor(id: number) {
-        this.definition = {
-            id: id
-        };
-    }
-
-    definition: { id: number; };
-    sourceBranch: string;
-    requestedFor: { id: string; };
-    sourceVersion: string;
-    queue: { id: number; };
-    demands: string[];
-
-    formatBuildParameters(buildParameters: string): string {
+    private buildParameterString(buildParameters: string): string {
         var buildParameterString: string = "";
-
         var keyValuePairs: string[] = buildParameters.split(",");
-
         for (var index: number = 0; index < keyValuePairs.length; index++) {
             var kvp: string = keyValuePairs[index];
-
             var splittedKvp: string[] = kvp.split(/:(.+)/);
-
             if (splittedKvp[0] === undefined || splittedKvp[1] === undefined) {
                 var errorMessage: string = `Build Parameters were not in expected format. Please verify that parameters are in the following format: \"VariableName: Value\"`;
-
                 console.error(errorMessage);
                 console.error(`Specified build parameters: ${buildParameters}`);
                 throw new Error(errorMessage);
             }
-
             var key: string = this.cleanValue(splittedKvp[0]);
             var value: string = this.cleanValue(splittedKvp[1]);
-
             var checkNextValues: boolean = true;
             while (index < keyValuePairs.length - 1 && checkNextValues) {
                 var nextKvp: string = keyValuePairs[index + 1];
@@ -643,20 +338,17 @@ class QueueBuildBody implements IQueueBuildBody {
                     checkNextValues = false;
                 }
             }
-
             console.log(`Found parameter ${key} with value: ${value}`);
-
             buildParameterString += `${this.escapeParametersForRequestBody(key)}: ${this.escapeParametersForRequestBody(value)},`;
         }
-
         if (buildParameterString.endsWith(",")) {
             buildParameterString = buildParameterString.substr(0, buildParameterString.length - 1);
         }
 
-        return `\"parameters\": \"{${buildParameterString}}\"`;
+        return buildParameterString;
     }
 
-    cleanValue(value: string): string {
+    private cleanValue(value: string): string {
         value = value.trim();
 
         if (value.startsWith("\\\"") && value.endsWith("\\\"")) {
