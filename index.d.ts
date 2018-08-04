@@ -13,7 +13,6 @@ export declare const CurrentBuildDefinition: string;
 export declare const OAuthAccessToken: string;
 export declare const RepositoryType: string;
 export declare const TfsRepositoryType: string;
-export declare const ApiUrl: string;
 export declare const AuthenticationMethodOAuthToken: string;
 export declare const AuthenticationMethodBasicAuthentication: string;
 export declare const AuthenticationMethodPersonalAccessToken: string;
@@ -37,9 +36,6 @@ export declare class TfsRestService implements ITfsRestService {
     vstsTestApi: testApi.ITestApi;
     taskAgentApi: taskAgentApi.ITaskAgentApi;
     teamProjectId: string;
-    isDebug: boolean;
-    logDebugFunction: (message: string) => void;
-    constructor(debug?: boolean, logDebugFunction?: (message: string) => void);
     initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, teamProject: string, ignoreSslError: boolean): Promise<void>;
     getBuildsByStatus(buildDefinitionName: string, statusFilter?: buildInterfaces.BuildStatus): Promise<buildInterfaces.Build[]>;
     triggerBuild(buildDefinitionName: string, branch: string, requestedForUserID: string, sourceVersion: string, demands: string[], queueId: number, buildParameters: string): Promise<buildInterfaces.Build>;

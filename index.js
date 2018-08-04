@@ -51,20 +51,15 @@ exports.CurrentBuildDefinition = "BUILD_DEFINITIONNAME";
 exports.OAuthAccessToken = "SYSTEM_ACCESSTOKEN";
 exports.RepositoryType = "BUILD_REPOSITORY_PROVIDER";
 exports.TfsRepositoryType = "TfsVersionControl";
-exports.ApiUrl = "_apis";
 exports.AuthenticationMethodOAuthToken = "OAuth Token";
 exports.AuthenticationMethodBasicAuthentication = "Basic Authentication";
 exports.AuthenticationMethodPersonalAccessToken = "Personal Access Token";
 var TfsRestService = (function () {
-    function TfsRestService(debug, logDebugFunction) {
-        if (debug === void 0) { debug = false; }
+    function TfsRestService() {
         this.vstsBuildApi = null;
         this.vstsTestApi = null;
         this.taskAgentApi = null;
         this.teamProjectId = "";
-        this.isDebug = false;
-        this.isDebug = debug;
-        this.logDebugFunction = logDebugFunction;
     }
     TfsRestService.prototype.initialize = function (authenticationMethod, username, password, tfsServer, teamProject, ignoreSslError) {
         return __awaiter(this, void 0, void 0, function () {
@@ -405,7 +400,6 @@ var TfsRestService = (function () {
         });
     };
     TfsRestService.prototype.buildParameterString = function (buildParameters) {
-        var buildParameterString = "";
         var buildParametersAsDictionary = {};
         if (buildParameters === null || buildParameters === undefined) {
             return "";
@@ -434,11 +428,7 @@ var TfsRestService = (function () {
                 }
             }
             console.log("Found parameter " + key + " with value: " + value);
-            buildParameterString += this.escapeParametersForRequestBody(key) + ": " + this.escapeParametersForRequestBody(value) + ",";
             buildParametersAsDictionary[key] = value;
-        }
-        if (buildParameterString.endsWith(",")) {
-            buildParameterString = buildParameterString.substr(0, buildParameterString.length - 1);
         }
         return JSON.stringify(buildParametersAsDictionary);
     };
