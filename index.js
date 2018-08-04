@@ -68,11 +68,13 @@ var TfsRestService = (function () {
     }
     TfsRestService.prototype.initialize = function (authenticationMethod, username, password, tfsServer, teamProject, ignoreSslError) {
         return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            var authHandler, authOptions, connection, _a, _b, _c, coreApi, projects;
+            var authHandler, authOptions, connection, _a, _b, _c, coreApi, projects, _i, projects_1, project;
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
+                        if (teamProject === "" || teamProject === undefined) {
+                            throw new Error("Team Project has to be defined!");
+                        }
                         switch (authenticationMethod) {
                             case exports.AuthenticationMethodOAuthToken:
                                 console.log("Using OAuth Access Token");
@@ -111,11 +113,13 @@ var TfsRestService = (function () {
                         return [4, coreApi.getProjects()];
                     case 5:
                         projects = _d.sent();
-                        projects.forEach(function (project) {
+                        for (_i = 0, projects_1 = projects; _i < projects_1.length; _i++) {
+                            project = projects_1[_i];
                             if (project.name === teamProject) {
-                                _this.teamProjectId = project.id;
+                                this.teamProjectId = project.id;
+                                console.log("Found id for team project " + teamProject + ": " + this.teamProjectId);
                             }
-                        });
+                        }
                         if (this.teamProjectId === "") {
                             throw new Error("Could not find any Team Project with name " + teamProject);
                         }
@@ -150,13 +154,23 @@ var TfsRestService = (function () {
                         buildId = _a.sent();
                         buildToTrigger = {
                             definition: { id: buildId },
-                            demands: demands,
-                            sourceVersion: sourceVersion,
-                            SourceBranch: branch,
-                            queue: { id: queueId },
-                            requestedFor: { id: requestedForUserID },
                             parameters: this.buildParameterString(buildParameters)
                         };
+                        if (branch !== null) {
+                            buildToTrigger.SourceBranch = branch;
+                        }
+                        if (requestedForUserID !== undefined && requestedForUserID !== "") {
+                            buildToTrigger.requestedFor = { id: requestedForUserID };
+                        }
+                        if (sourceVersion !== undefined && sourceVersion !== "") {
+                            buildToTrigger.sourceVersion = sourceVersion;
+                        }
+                        if (queueId !== null && queueId !== undefined) {
+                            buildToTrigger.queue = { id: queueId };
+                        }
+                        if (demands !== null && demands.length > 0) {
+                            buildToTrigger.demands = demands;
+                        }
                         return [4, this.vstsBuildApi.queueBuild(buildToTrigger, this.teamProjectId, true)];
                     case 2:
                         result = _a.sent();
@@ -392,6 +406,10 @@ var TfsRestService = (function () {
     };
     TfsRestService.prototype.buildParameterString = function (buildParameters) {
         var buildParameterString = "";
+        var buildParametersAsDictionary = {};
+        if (buildParameters === null || buildParameters === undefined) {
+            return "";
+        }
         var keyValuePairs = buildParameters.split(",");
         for (var index = 0; index < keyValuePairs.length; index++) {
             var kvp = keyValuePairs[index];
@@ -417,11 +435,12 @@ var TfsRestService = (function () {
             }
             console.log("Found parameter " + key + " with value: " + value);
             buildParameterString += this.escapeParametersForRequestBody(key) + ": " + this.escapeParametersForRequestBody(value) + ",";
+            buildParametersAsDictionary[key] = value;
         }
         if (buildParameterString.endsWith(",")) {
             buildParameterString = buildParameterString.substr(0, buildParameterString.length - 1);
         }
-        return buildParameterString;
+        return JSON.stringify(buildParametersAsDictionary);
     };
     TfsRestService.prototype.cleanValue = function (value) {
         value = value.trim();

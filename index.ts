@@ -75,6 +75,10 @@ export class TfsRestService implements ITfsRestService {
     public async initialize(
         authenticationMethod: string, username: string, password: string, tfsServer: string, teamProject: string, ignoreSslError: boolean):
         Promise<void> {
+            if (teamProject === "" || teamProject === undefined){
+                throw new Error("Team Project has to be defined!");
+            }
+
         let authHandler: baseInterfaces.IRequestHandler;
 
         switch (authenticationMethod) {
@@ -105,11 +109,13 @@ export class TfsRestService implements ITfsRestService {
         var coreApi: coreApi.ICoreApi = await connection.getCoreApi();
 
         var projects: coreInterfaces.TeamProjectReference[] = await coreApi.getProjects();
-        projects.forEach(project => {
+
+        for (let project of projects) {
             if (project.name === teamProject) {
                 this.teamProjectId = project.id;
+                console.log(`Found id for team project ${teamProject}: ${this.teamProjectId}`);
             }
-        });
+        }
 
         if (this.teamProjectId === "") {
             throw new Error(`Could not find any Team Project with name ${teamProject}`);
@@ -138,13 +144,28 @@ export class TfsRestService implements ITfsRestService {
 
         var buildToTrigger: any = {
             definition: { id: buildId },
-            demands: demands,
-            sourceVersion: sourceVersion,
-            SourceBranch: branch,
-            queue: { id: queueId },
-            requestedFor: { id: requestedForUserID },
             parameters: this.buildParameterString(buildParameters)
         };
+
+        if (branch !== null) {
+            buildToTrigger.SourceBranch = branch;
+        }
+
+        if (requestedForUserID !== undefined && requestedForUserID !== "") {
+            buildToTrigger.requestedFor = { id: requestedForUserID };
+        }
+
+        if (sourceVersion !== undefined && sourceVersion !== "") {
+            buildToTrigger.sourceVersion = sourceVersion;
+        }
+
+        if (queueId !== null && queueId !== undefined) {
+            buildToTrigger.queue = { id: queueId };
+        }
+
+        if (demands !== null && demands.length > 0) {
+            buildToTrigger.demands = demands;
+        }
 
         var result: buildInterfaces.Build = await this.vstsBuildApi.queueBuild(buildToTrigger, this.teamProjectId, true);
 
@@ -312,7 +333,12 @@ export class TfsRestService implements ITfsRestService {
     }
 
     private buildParameterString(buildParameters: string): string {
-        var buildParameterString: string = "";
+        var buildParametersAsDictionary : {[id: string] : string } = {};
+
+        if (buildParameters === null || buildParameters === undefined){
+            return "";
+        }
+
         var keyValuePairs: string[] = buildParameters.split(",");
         for (var index: number = 0; index < keyValuePairs.length; index++) {
             var kvp: string = keyValuePairs[index];
@@ -337,13 +363,10 @@ export class TfsRestService implements ITfsRestService {
                 }
             }
             console.log(`Found parameter ${key} with value: ${value}`);
-            buildParameterString += `${this.escapeParametersForRequestBody(key)}: ${this.escapeParametersForRequestBody(value)},`;
-        }
-        if (buildParameterString.endsWith(",")) {
-            buildParameterString = buildParameterString.substr(0, buildParameterString.length - 1);
+            buildParametersAsDictionary[key] = value;
         }
 
-        return buildParameterString;
+        return JSON.stringify(buildParametersAsDictionary);
     }
 
     private cleanValue(value: string): string {
