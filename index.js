@@ -258,7 +258,7 @@ var TfsRestService = (function () {
                         if (!(_i < result_1.length)) return [3, 5];
                         artifact = result_1[_i];
                         if (artifact.resource.type !== "Container") {
-                            console.log("Cannot download artifact " + artifact.name + ". Only Containers are supported (type is \"" + artifact.resource.type + "\"");
+                            console.log("Cannot download artifact " + artifact.name + ". Only Containers are supported (type is \"" + artifact.resource.type + ")\"");
                             return [3, 4];
                         }
                         console.log("Downloading artifact " + artifact.name + "...");
