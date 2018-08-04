@@ -34,6 +34,7 @@
     "mocha": "^4.0.1",
     "sinon": "^4.4.2",
     "typemoq": "^2.1.0",
-    "typescript": "^2.7.2"
+    "typescript": "^2.7.2",    
+    "vso-node-api": "^6.5.0"
   }
 }
