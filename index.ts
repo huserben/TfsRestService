@@ -2,19 +2,15 @@ import * as fs from "fs";
 import * as url from "url";
 import { List } from "linqts";
 import * as vsts from "vso-node-api";
-/*import * as ba from "vso-node-api/BuildApi";
-import * as bi from "vso-node-api/interfaces/BuildInterfaces";
-import * as ti from "vso-node-api/interfaces/TestInterfaces";*/
-
-import { IRequestHandler, IRequestOptions } from "./node_modules/vso-node-api/interfaces/common/VsoBaseInterfaces";
-import { ICoreApi } from "./node_modules/vso-node-api/CoreApi";
-import { TeamProjectReference } from "./node_modules/vso-node-api/interfaces/CoreInterfaces";
-import { ITestApi } from "./node_modules/vso-node-api/TestApi";
-import { IBuildApi } from "./node_modules/vso-node-api/BuildApi";
-import { Build, BuildStatus, Change, BuildResult, BuildArtifact, BuildDefinitionReference } from "./node_modules/vso-node-api/interfaces/BuildInterfaces";
-import { TestRun, RunStatistic, TestRunState } from "./node_modules/vso-node-api/interfaces/TestInterfaces";
-import { ITaskAgentApi } from "./node_modules/vso-node-api/TaskAgentApi";
-import { TaskAgentQueue } from "./node_modules/vso-node-api/interfaces/TaskAgentInterfaces";
+import * as buildApi from "vso-node-api/BuildApi";
+import * as buildInterfaces from "vso-node-api/interfaces/BuildInterfaces";
+import * as testInterfaces from "vso-node-api/interfaces/TestInterfaces";
+import * as testApi from "vso-node-api/TestApi";
+import * as taskAgentApi from "vso-node-api/TaskAgentApi";
+import * as coreApi from "vso-node-api/CoreApi";
+import * as coreInterfaces from "vso-node-api/interfaces/CoreInterfaces";
+import * as taskAgentInterface from "vso-node-api/interfaces/TaskAgentInterfaces";
+import * as baseInterfaces from "vso-node-api/interfaces/common/VsoBaseInterfaces";
 
 export const TeamFoundationCollectionUri: string = "SYSTEM_TEAMFOUNDATIONCOLLECTIONURI";
 export const TeamProject: string = "SYSTEM_TEAMPROJECT";
@@ -41,7 +37,7 @@ export interface ITfsRestService {
     initialize(
         authenticationMethod: string, username: string, password: string, tfsServer: string, teamProject: string, ignoreSslError: boolean):
         Promise<void>;
-    getBuildsByStatus(buildDefinitionName: string, statusFilter: BuildStatus): Promise<Build[]>;
+    getBuildsByStatus(buildDefinitionName: string, statusFilter: buildInterfaces.BuildStatus): Promise<buildInterfaces.Build[]>;
     triggerBuild(
         buildDefinitionName: string,
         branch: string,
@@ -49,24 +45,24 @@ export interface ITfsRestService {
         sourceVersion: string,
         demands: string[],
         queueId: number,
-        buildParameters: string): Promise<Build>;
+        buildParameters: string): Promise<buildInterfaces.Build>;
     downloadArtifacts(buildId: number, downloadDirectory: string): Promise<void>;
     getQueueIdByName(buildQueue: string): Promise<number>;
-    getBuildInfo(buildId: number): Promise<Build>;
+    getBuildInfo(buildId: number): Promise<buildInterfaces.Build>;
     areBuildsFinished(triggeredBuilds: number[], failIfNotSuccessful: boolean, failIfPartiallySucceeded: boolean): Promise<boolean>;
     isBuildFinished(buildId: number): Promise<boolean>;
     wasBuildSuccessful(buildId: number): Promise<boolean>;
     getBuildDefinitionId(buildDefinitionName: string): Promise<number>;
-    getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<TestRun[]>;
-    getAssociatedChanges(build: Build): Promise<Change[]>;
+    getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<testInterfaces.TestRun[]>;
+    getAssociatedChanges(build: buildInterfaces.Build): Promise<buildInterfaces.Change[]>;
     cancelBuild(buildId: number): Promise<void>;
 }
 
 /* Tfs Rest Service Implementation */
 export class TfsRestService implements ITfsRestService {
-    vstsBuildApi: IBuildApi = null;
-    vstsTestApi: ITestApi = null;
-    taskAgentApi: ITaskAgentApi = null;
+    vstsBuildApi: buildApi.IBuildApi = null;
+    vstsTestApi: testApi.ITestApi = null;
+    taskAgentApi: taskAgentApi.ITaskAgentApi = null;
     teamProjectId: string = "";
     isDebug: boolean = false;
     logDebugFunction: (message: string) => void;
@@ -79,7 +75,7 @@ export class TfsRestService implements ITfsRestService {
     public async initialize(
         authenticationMethod: string, username: string, password: string, tfsServer: string, teamProject: string, ignoreSslError: boolean):
         Promise<void> {
-        let authHandler: IRequestHandler;
+        let authHandler: baseInterfaces.IRequestHandler;
 
         switch (authenticationMethod) {
             case AuthenticationMethodOAuthToken:
@@ -98,7 +94,7 @@ export class TfsRestService implements ITfsRestService {
                 throw new Error("Cannot handle authentication method " + authenticationMethod);
         }
 
-        let authOptions: IRequestOptions = {
+        let authOptions: baseInterfaces.IRequestOptions = {
             ignoreSslError: ignoreSslError
         };
 
@@ -106,9 +102,9 @@ export class TfsRestService implements ITfsRestService {
         this.vstsBuildApi = await connection.getBuildApi();
         this.vstsTestApi = await connection.getTestApi();
         this.taskAgentApi = await connection.getTaskAgentApi();
-        var coreApi: ICoreApi = await connection.getCoreApi();
+        var coreApi: coreApi.ICoreApi = await connection.getCoreApi();
 
-        var projects: TeamProjectReference[] = await coreApi.getProjects();
+        var projects: coreInterfaces.TeamProjectReference[] = await coreApi.getProjects();
         projects.forEach(project => {
             if (project.name === teamProject) {
                 this.teamProjectId = project.id;
@@ -120,10 +116,11 @@ export class TfsRestService implements ITfsRestService {
         }
     }
 
-    public async getBuildsByStatus(buildDefinitionName: string, statusFilter: BuildStatus): Promise<Build[]> {
+    public async getBuildsByStatus(buildDefinitionName: string, statusFilter: buildInterfaces.BuildStatus):
+    Promise<buildInterfaces.Build[]> {
         var buildDefinitionID: number = await this.getBuildDefinitionId(buildDefinitionName);
 
-        var result: Build[] = await this.vstsBuildApi.getBuilds(
+        var result: buildInterfaces.Build[] = await this.vstsBuildApi.getBuilds(
             this.teamProjectId, [buildDefinitionID], null, null, null, null, null, null, statusFilter);
 
         return result;
@@ -136,7 +133,7 @@ export class TfsRestService implements ITfsRestService {
         sourceVersion: string,
         demands: string[],
         queueId: number,
-        buildParameters: string): Promise<Build> {
+        buildParameters: string): Promise<buildInterfaces.Build> {
         var buildId: number = await this.getBuildDefinitionId(buildDefinitionName);
 
         var buildToTrigger: any = {
@@ -149,7 +146,7 @@ export class TfsRestService implements ITfsRestService {
             parameters: this.buildParameterString(buildParameters)
         };
 
-        var result: Build = await this.vstsBuildApi.queueBuild(buildToTrigger, this.teamProjectId, true);
+        var result: buildInterfaces.Build = await this.vstsBuildApi.queueBuild(buildToTrigger, this.teamProjectId, true);
 
         return result;
     }
@@ -158,17 +155,17 @@ export class TfsRestService implements ITfsRestService {
         triggeredBuilds: number[], failIfNotSuccessful: boolean, treatPartiallySucceededBuildAsSuccessful: boolean): Promise<boolean> {
         var result: boolean = true;
         for (let queuedBuildId of triggeredBuilds) {
-            var buildInfo: Build = await this.getBuildInfo(queuedBuildId);
-            var buildFinished: boolean = buildInfo.status === BuildStatus.Completed;
+            var buildInfo: buildInterfaces.Build = await this.getBuildInfo(queuedBuildId);
+            var buildFinished: boolean = buildInfo.status === buildInterfaces.BuildStatus.Completed;
 
             if (!buildFinished) {
                 result = false;
             } else {
                 result = result && true;
-                var buildSuccessful: boolean = buildInfo.result === BuildResult.Succeeded;
+                var buildSuccessful: boolean = buildInfo.result === buildInterfaces.BuildResult.Succeeded;
 
                 if (!buildSuccessful && treatPartiallySucceededBuildAsSuccessful) {
-                    buildSuccessful = buildInfo.result === BuildResult.PartiallySucceeded;
+                    buildSuccessful = buildInfo.result === buildInterfaces.BuildResult.PartiallySucceeded;
                 }
 
                 if (failIfNotSuccessful && !buildSuccessful) {
@@ -181,14 +178,14 @@ export class TfsRestService implements ITfsRestService {
     }
 
     public async cancelBuild(buildId: number): Promise<void> {
-        var buildInfo: Build = await this.getBuildInfo(buildId);
+        var buildInfo: buildInterfaces.Build = await this.getBuildInfo(buildId);
 
-        if (buildInfo.status === BuildStatus.Completed) {
+        if (buildInfo.status === buildInterfaces.BuildStatus.Completed) {
             console.log(`Build ${buildId} has already finished.`);
             return;
         }
 
-        var requestBody: any = { status: BuildStatus.Cancelling };
+        var requestBody: any = { status: buildInterfaces.BuildStatus.Cancelling };
 
         this.vstsBuildApi.updateBuild(requestBody, buildId, this.teamProjectId);
     }
@@ -206,7 +203,7 @@ export class TfsRestService implements ITfsRestService {
         }
 
 
-        var result: BuildArtifact[] = await this.vstsBuildApi.getArtifacts(buildId, this.teamProjectId);
+        var result: buildInterfaces.BuildArtifact[] = await this.vstsBuildApi.getArtifacts(buildId, this.teamProjectId);
 
         if (result.length === 0) {
             console.log(`No artifacts found for build ${buildId} - skipping...`);
@@ -248,13 +245,13 @@ export class TfsRestService implements ITfsRestService {
         }
     }
 
-    public async getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<TestRun[]> {
-        var testRunSummaries: TestRun[] = await this.vstsTestApi.getTestRuns(this.teamProjectId);
+    public async getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<testInterfaces.TestRun[]> {
+        var testRunSummaries: testInterfaces.TestRun[] = await this.vstsTestApi.getTestRuns(this.teamProjectId);
 
         // reverse to fetch newest to oldest.
-        let testRuns: TestRun[] = new List<TestRun>(testRunSummaries)
+        let testRuns: testInterfaces.TestRun[] = new List<testInterfaces.TestRun>(testRunSummaries)
             .Reverse()
-            .Where(x => x !== undefined && x.state === TestRunState.Completed.toString()
+            .Where(x => x !== undefined && x.state === testInterfaces.TestRunState.Completed.toString()
                 && x.name === testRunName)
             .Take(numberOfRunsToFetch)
             .ToArray();
@@ -264,10 +261,10 @@ export class TfsRestService implements ITfsRestService {
     }
 
     public async getQueueIdByName(buildQueue: string): Promise<number> {
-        var agentQueues: TaskAgentQueue[] = await this.taskAgentApi.getAgentQueues(this.teamProjectId, buildQueue);
+        var agentQueues: taskAgentInterface.TaskAgentQueue[] = await this.taskAgentApi.getAgentQueues(this.teamProjectId, buildQueue);
 
         if (agentQueues.length === 1) {
-            var agentQueue : TaskAgentQueue = agentQueues[0];
+            var agentQueue : taskAgentInterface.TaskAgentQueue = agentQueues[0];
             return agentQueue.id;
         }
 
@@ -280,20 +277,21 @@ export class TfsRestService implements ITfsRestService {
     }
 
     public async isBuildFinished(buildId: number): Promise<boolean> {
-        var result: Build = await this.getBuildInfo(buildId);
+        var result: buildInterfaces.Build = await this.getBuildInfo(buildId);
 
-        return result.status === BuildStatus.Completed;
+        return result.status === buildInterfaces.BuildStatus.Completed;
     }
 
     public async wasBuildSuccessful(buildId: number): Promise<boolean> {
-        var result: Build = await this.getBuildInfo(buildId);
+        var result: buildInterfaces.Build = await this.getBuildInfo(buildId);
 
-        return result.result === BuildResult.Succeeded;
+        return result.result === buildInterfaces.BuildResult.Succeeded;
     }
 
     public async getBuildDefinitionId(buildDefinitionName: string): Promise<number> {
 
-        var result: BuildDefinitionReference[] = await this.vstsBuildApi.getDefinitions(this.teamProjectId, buildDefinitionName);
+        var result: buildInterfaces.BuildDefinitionReference[] = await this.vstsBuildApi.getDefinitions(
+            this.teamProjectId, buildDefinitionName);
 
         if (result.length === 0) {
             throw new Error(`Did not find any build definition with this name: ${buildDefinitionName}`);
@@ -302,14 +300,14 @@ export class TfsRestService implements ITfsRestService {
         return result[0].id;
     }
 
-    public async getAssociatedChanges(build: Build): Promise<Change[]> {
-        var result: Change[] = await this.vstsBuildApi.getBuildChanges(this.teamProjectId, build.id);
+    public async getAssociatedChanges(build: buildInterfaces.Build): Promise<buildInterfaces.Change[]> {
+        var result: buildInterfaces.Change[] = await this.vstsBuildApi.getBuildChanges(this.teamProjectId, build.id);
         return result;
     }
 
-    public async getBuildInfo(buildId: number): Promise<Build> {
+    public async getBuildInfo(buildId: number): Promise<buildInterfaces.Build> {
 
-        var build: Build = await this.vstsBuildApi.getBuild(buildId, this.teamProjectId);
+        var build: buildInterfaces.Build = await this.vstsBuildApi.getBuild(buildId, this.teamProjectId);
         return build;
     }
 

@@ -39,8 +39,8 @@ var fs = require("fs");
 var url = require("url");
 var linqts_1 = require("linqts");
 var vsts = require("vso-node-api");
-var BuildInterfaces_1 = require("./node_modules/vso-node-api/interfaces/BuildInterfaces");
-var TestInterfaces_1 = require("./node_modules/vso-node-api/interfaces/TestInterfaces");
+var buildInterfaces = require("vso-node-api/interfaces/BuildInterfaces");
+var testInterfaces = require("vso-node-api/interfaces/TestInterfaces");
 exports.TeamFoundationCollectionUri = "SYSTEM_TEAMFOUNDATIONCOLLECTIONURI";
 exports.TeamProject = "SYSTEM_TEAMPROJECT";
 exports.RequestedForUsername = "BUILD_REQUESTEDFOR";
@@ -180,15 +180,15 @@ var TfsRestService = (function () {
                         return [4, this.getBuildInfo(queuedBuildId)];
                     case 2:
                         buildInfo = _a.sent();
-                        buildFinished = buildInfo.status === BuildInterfaces_1.BuildStatus.Completed;
+                        buildFinished = buildInfo.status === buildInterfaces.BuildStatus.Completed;
                         if (!buildFinished) {
                             result = false;
                         }
                         else {
                             result = result && true;
-                            buildSuccessful = buildInfo.result === BuildInterfaces_1.BuildResult.Succeeded;
+                            buildSuccessful = buildInfo.result === buildInterfaces.BuildResult.Succeeded;
                             if (!buildSuccessful && treatPartiallySucceededBuildAsSuccessful) {
-                                buildSuccessful = buildInfo.result === BuildInterfaces_1.BuildResult.PartiallySucceeded;
+                                buildSuccessful = buildInfo.result === buildInterfaces.BuildResult.PartiallySucceeded;
                             }
                             if (failIfNotSuccessful && !buildSuccessful) {
                                 throw new Error("Build " + queuedBuildId + " (" + buildInfo.definition.name + ") was not successful. See following link for more info: " + buildInfo._links.web.href);
@@ -211,11 +211,11 @@ var TfsRestService = (function () {
                     case 0: return [4, this.getBuildInfo(buildId)];
                     case 1:
                         buildInfo = _a.sent();
-                        if (buildInfo.status === BuildInterfaces_1.BuildStatus.Completed) {
+                        if (buildInfo.status === buildInterfaces.BuildStatus.Completed) {
                             console.log("Build " + buildId + " has already finished.");
                             return [2];
                         }
-                        requestBody = { status: BuildInterfaces_1.BuildStatus.Cancelling };
+                        requestBody = { status: buildInterfaces.BuildStatus.Cancelling };
                         this.vstsBuildApi.updateBuild(requestBody, buildId, this.teamProjectId);
                         return [2];
                 }
@@ -291,7 +291,7 @@ var TfsRestService = (function () {
                         testRunSummaries = _a.sent();
                         testRuns = new linqts_1.List(testRunSummaries)
                             .Reverse()
-                            .Where(function (x) { return x !== undefined && x.state === TestInterfaces_1.TestRunState.Completed.toString()
+                            .Where(function (x) { return x !== undefined && x.state === testInterfaces.TestRunState.Completed.toString()
                             && x.name === testRunName; })
                             .Take(numberOfRunsToFetch)
                             .ToArray();
@@ -330,7 +330,7 @@ var TfsRestService = (function () {
                     case 0: return [4, this.getBuildInfo(buildId)];
                     case 1:
                         result = _a.sent();
-                        return [2, result.status === BuildInterfaces_1.BuildStatus.Completed];
+                        return [2, result.status === buildInterfaces.BuildStatus.Completed];
                 }
             });
         });
@@ -343,7 +343,7 @@ var TfsRestService = (function () {
                     case 0: return [4, this.getBuildInfo(buildId)];
                     case 1:
                         result = _a.sent();
-                        return [2, result.result === BuildInterfaces_1.BuildResult.Succeeded];
+                        return [2, result.result === buildInterfaces.BuildResult.Succeeded];
                 }
             });
         });
