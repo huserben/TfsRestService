@@ -1,10 +1,8 @@
 # TFS Rest Service
 
-# DOCUMENTATION NOT YET UP TO DATE WITH NEW API CHANGES
-
 Simple service that abstracts calls to the TFS REST API and provides back data objects to be used in TypeScript/JavaScript.
 
-Used as part of the Build Tasks for Triggering another build in TFS (see https://marketplace.visualstudio.com/items?itemName=benjhuser.tfs-extensions-build-tasks).  
+Used as part of the Build Tasks for Triggering another build in TFS (see [VSTS Marketplace](https://marketplace.visualstudio.com/items?itemName=benjhuser.tfs-extensions-build-tasks)).  
 
 ## Usage
 Usage is simple, import the package:  
@@ -13,8 +11,8 @@ Usage is simple, import the package:
 Then you can create a new instance of the service by newing it:  
 `var service: tfsRestService.ITfsRestService = new tfsRestService.TfsRestService()`  
 
-Before you make any calls to the TFS/VSTS you have to initialize the service by specifying the server you want to query and define how to authenticate:  
-`initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, ignoreSslError: boolean): void;`  
+Before you make any calls to the TFS/VSTS you have to initialize the service by specifying the server you want to query, the Team Project and define how to authenticate:  
+`initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, teamProject: string, ignoreSslError: boolean): Promise<void>;`  
 
 The 3 different types of authentication that are supported are the following:  
 - OAuth (need to supply the token in the 'password' field)  
@@ -23,13 +21,15 @@ The 3 different types of authentication that are supported are the following:
 
 The different keys for the authentication can be found as a constant - they all start with "AuthenticationMethod".
 
-The supplied TfsServer must be the URL including the collection and the Team Project:  
-`https://MyTfsServer.com:8080/DefaultCollection/MyProject`
+The supplied TfsServer must be the URL including the collection:  
+`https://MyTfsServer.com:8080/DefaultCollection`
+
+Internally the service uses the [vso-node-api](https://github.com/Microsoft/vsts-node-api) to access the REST API.
 
 ## Interface
 Except from the initialize method following methods are currently offered:
 
-### triggerBuild(buildDefinitionName: string, branch: string, requestedForUserID: string, sourceVersion: string, demands: string[], queueId: number, buildParameters: string): Promise<string\>
+### triggerBuild(buildDefinitionName: string, branch: string, requestedFor: string, sourceVersion: string, demands: string[], queueId: number, buildParameters: string): Promise<Build\>
 This will try to trigger a new build for the build definition that was specified.  
 The build definition name is the only mandatory parameter - if not specified it will fail. The others are optional and "" can be passed if they should be skipped.  
 - *branch*: The branch for which the build shall be triggered  
@@ -39,31 +39,29 @@ The build definition name is the only mandatory parameter - if not specified it 
 -  *queueId*: The id of the agent queue to be used. If not specified, the default queue will be used.  
 -  *buildParameters*: Parameters of that should be passed to the build - e.g. BuildConfiguration etc.
 
-### getBuildsByStatus(buildDefinitionName: string, statusFilter: string): Promise<IBuild[]>
-Will get all builds from a given build definition and that applie to the specified status filter. If the status filter is empty it will return all found builds. The status filter can as well contain multiple comma separated entries. Following states are predefined:  
-- BuildStateNotStarted  
-- BuildStateInProgress  
-- BuildStateCompleted  
-- BuildResultSucceeded
+### getBuildsByStatus(buildDefinitionName: string, statusFilter: BuildStatus): Promise<Build[]>
+Will get all builds from a given build definition and that apply to the specified status filter. If the status filter is empty it will return all found builds. The status filter is an enum of type *BuildStatus* from *vso-node-api/interfaces/BuildInterfaces* and supports multiple values. Just use the following syntax:  
+`BuildStatus.NotStarted | BuildStatus.InProgress`  
+to filter for both not started and in progress builds.
 
-### downloadArtifacts(buildId: string, downloadDirectory: string): void
+### downloadArtifacts(buildId: number, downloadDirectory: string): Promise<void>
 This method will download the artifacts of the build with the specified id to the directory passed. The artifacts are downloaded as a zip.
 
-### getBuildInfo(buildId: string): Promise<IBuild\>
-Gets the *IBuild* containing information about the build with the specified id.  
+### getBuildInfo(buildId: number): Promise<Build\>
+Gets the *Build* containing information about the build with the specified id.  
 
-### areBuildsFinished(triggeredBuilds: string[], failIfNotSuccessful: boolean): Promise<boolean\>
+### areBuildsFinished(triggeredBuilds: number[], failIfNotSuccessful: boolean): Promise<boolean\>
 Will check if **all** of the specified builds are finished. If one is not yet finished, this will return false.  
 The builds must be specified with their ids.  
 If *failIfNotSuccessful* parameter is set to true, an error will be thrown if a build finished but did not succeed.
 
-### isBuildFinished(buildId: string): Promise<boolean\>
+### isBuildFinished(buildId: number): Promise<boolean\>
 Will check if a single build is finished or not.
 
-### wasBuildSuccessful(buildId: string): Promise<boolean\>
+### wasBuildSuccessful(buildId: number): Promise<boolean\>
 Checks whether the specified build was successful or not.
 
-### getAssociatedChanges(build: IBuild): Promise<IChange[]\>
+### getAssociatedChanges(build: Build): Promise<Change[]\>
 Returns the associated changes of the specified build.
 
 ### getBuildDefinitionId(buildDefinitionName: string): Promise<string\>
@@ -72,11 +70,8 @@ Gets the id of the build definition which is specified by name as a parameter.
 ### getQueueIdByName(buildQueue: string): Promise<number\>
 Will try to get a Queue ID by a specified name. This is useful if you want to trigger a build on a specific Agent Queue.
 
-### getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<ITestRun[]\>
+### getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<TestRun[]\>
 Will get a list of all Test Runs which match the specified name. Will only get the specified number of runs, sorted by newest to oldest.  
 
-### getTestResults(testRun: ITestRun): Promise<ITestResult[]\>  
-Gets the Tests that were run as part of the specified test run.
-
-### cancelBuild(buildId: string): Promise<void>
+### cancelBuild(buildId: number): Promise<void>
 Cancels the build with the specified id. Ignored when the build has already completed.

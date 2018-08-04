@@ -27,8 +27,6 @@ export const OAuthAccessToken: string = "SYSTEM_ACCESSTOKEN";
 export const RepositoryType: string = "BUILD_REPOSITORY_PROVIDER";
 export const TfsRepositoryType: string = "TfsVersionControl";
 
-export const ApiUrl: string = "_apis";
-
 export const AuthenticationMethodOAuthToken: string = "OAuth Token";
 export const AuthenticationMethodBasicAuthentication: string = "Basic Authentication";
 export const AuthenticationMethodPersonalAccessToken: string = "Personal Access Token";
@@ -64,13 +62,6 @@ export class TfsRestService implements ITfsRestService {
     vstsTestApi: testApi.ITestApi = null;
     taskAgentApi: taskAgentApi.ITaskAgentApi = null;
     teamProjectId: string = "";
-    isDebug: boolean = false;
-    logDebugFunction: (message: string) => void;
-
-    constructor(debug: boolean = false, logDebugFunction?: (message: string) => void) {
-        this.isDebug = debug;
-        this.logDebugFunction = logDebugFunction;
-    }
 
     public async initialize(
         authenticationMethod: string, username: string, password: string, tfsServer: string, teamProject: string, ignoreSslError: boolean):
