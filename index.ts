@@ -37,7 +37,7 @@ export interface ITfsRestService {
     initialize(
         authenticationMethod: string, username: string, password: string, tfsServer: string, teamProject: string, ignoreSslError: boolean):
         Promise<void>;
-    getBuildsByStatus(buildDefinitionName: string, statusFilter: buildInterfaces.BuildStatus): Promise<buildInterfaces.Build[]>;
+    getBuildsByStatus(buildDefinitionName: string, statusFilter?: buildInterfaces.BuildStatus): Promise<buildInterfaces.Build[]>;
     triggerBuild(
         buildDefinitionName: string,
         branch: string,
@@ -116,7 +116,7 @@ export class TfsRestService implements ITfsRestService {
         }
     }
 
-    public async getBuildsByStatus(buildDefinitionName: string, statusFilter: buildInterfaces.BuildStatus):
+    public async getBuildsByStatus(buildDefinitionName: string, statusFilter?: buildInterfaces.BuildStatus):
     Promise<buildInterfaces.Build[]> {
         var buildDefinitionID: number = await this.getBuildDefinitionId(buildDefinitionName);
 

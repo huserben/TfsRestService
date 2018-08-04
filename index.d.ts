@@ -19,7 +19,7 @@ export declare const AuthenticationMethodBasicAuthentication: string;
 export declare const AuthenticationMethodPersonalAccessToken: string;
 export interface ITfsRestService {
     initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, teamProject: string, ignoreSslError: boolean): Promise<void>;
-    getBuildsByStatus(buildDefinitionName: string, statusFilter: buildInterfaces.BuildStatus): Promise<buildInterfaces.Build[]>;
+    getBuildsByStatus(buildDefinitionName: string, statusFilter?: buildInterfaces.BuildStatus): Promise<buildInterfaces.Build[]>;
     triggerBuild(buildDefinitionName: string, branch: string, requestedFor: string, sourceVersion: string, demands: string[], queueId: number, buildParameters: string): Promise<buildInterfaces.Build>;
     downloadArtifacts(buildId: number, downloadDirectory: string): Promise<void>;
     getQueueIdByName(buildQueue: string): Promise<number>;
@@ -41,7 +41,7 @@ export declare class TfsRestService implements ITfsRestService {
     logDebugFunction: (message: string) => void;
     constructor(debug?: boolean, logDebugFunction?: (message: string) => void);
     initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, teamProject: string, ignoreSslError: boolean): Promise<void>;
-    getBuildsByStatus(buildDefinitionName: string, statusFilter: buildInterfaces.BuildStatus): Promise<buildInterfaces.Build[]>;
+    getBuildsByStatus(buildDefinitionName: string, statusFilter?: buildInterfaces.BuildStatus): Promise<buildInterfaces.Build[]>;
     triggerBuild(buildDefinitionName: string, branch: string, requestedForUserID: string, sourceVersion: string, demands: string[], queueId: number, buildParameters: string): Promise<buildInterfaces.Build>;
     areBuildsFinished(triggeredBuilds: number[], failIfNotSuccessful: boolean, treatPartiallySucceededBuildAsSuccessful: boolean): Promise<boolean>;
     cancelBuild(buildId: number): Promise<void>;
