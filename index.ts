@@ -14,6 +14,7 @@ import * as baseInterfaces from "vso-node-api/interfaces/common/VsoBaseInterface
 
 export const TeamFoundationCollectionUri: string = "SYSTEM_TEAMFOUNDATIONCOLLECTIONURI";
 export const TeamProject: string = "SYSTEM_TEAMPROJECT";
+export const TeamProjectId: string = "SYSTEM_TEAMPROJECTID";
 
 export const RequestedForUsername: string = "BUILD_REQUESTEDFOR";
 export const RequestedForUserId: string = "BUILD_REQUESTEDFORID";
@@ -62,13 +63,25 @@ export class TfsRestService implements ITfsRestService {
     vstsTestApi: testApi.ITestApi = null;
     taskAgentApi: taskAgentApi.ITaskAgentApi = null;
     teamProjectId: string = "";
+    createWebApi:
+        (server: string, authHandler: baseInterfaces.IRequestHandler, options: baseInterfaces.IRequestOptions) => vsts.WebApi = undefined;
+
+    constructor(
+        createWebApi?:
+            (server: string, authHandler: baseInterfaces.IRequestHandler, options: baseInterfaces.IRequestOptions) => vsts.WebApi) {
+        if (createWebApi === undefined) {
+            createWebApi = (server, authHandler, options) => new vsts.WebApi(server, authHandler, options);
+        }
+
+        this.createWebApi = createWebApi;
+    }
 
     public async initialize(
         authenticationMethod: string, username: string, password: string, tfsServer: string, teamProject: string, ignoreSslError: boolean):
         Promise<void> {
-            if (teamProject === "" || teamProject === undefined){
-                throw new Error("Team Project has to be defined!");
-            }
+        if (teamProject === "" || teamProject === undefined) {
+            throw new Error("Team Project has to be defined!");
+        }
 
         let authHandler: baseInterfaces.IRequestHandler;
 
@@ -93,28 +106,16 @@ export class TfsRestService implements ITfsRestService {
             ignoreSslError: ignoreSslError
         };
 
-        let connection: vsts.WebApi = new vsts.WebApi(tfsServer, authHandler, authOptions);
+        let connection: vsts.WebApi = this.createWebApi(tfsServer, authHandler, authOptions);
         this.vstsBuildApi = await connection.getBuildApi();
         this.vstsTestApi = await connection.getTestApi();
         this.taskAgentApi = await connection.getTaskAgentApi();
-        var coreApi: coreApi.ICoreApi = await connection.getCoreApi();
 
-        var projects: coreInterfaces.TeamProjectReference[] = await coreApi.getProjects();
-
-        for (let project of projects) {
-            if (project.name === teamProject) {
-                this.teamProjectId = project.id;
-                console.log(`Found id for team project ${teamProject}: ${this.teamProjectId}`);
-            }
-        }
-
-        if (this.teamProjectId === "") {
-            throw new Error(`Could not find any Team Project with name ${teamProject}`);
-        }
+        await this.setTeamProjectId(connection, teamProject);
     }
 
     public async getBuildsByStatus(buildDefinitionName: string, statusFilter?: buildInterfaces.BuildStatus):
-    Promise<buildInterfaces.Build[]> {
+        Promise<buildInterfaces.Build[]> {
         var buildDefinitionID: number = await this.getBuildDefinitionId(buildDefinitionName);
 
         var result: buildInterfaces.Build[] = await this.vstsBuildApi.getBuilds(
@@ -203,7 +204,7 @@ export class TfsRestService implements ITfsRestService {
     }
 
     public async downloadArtifacts(buildId: number, downloadDirectory: string): Promise<void> {
-        console.log(`Downloading artifacts for ${buildId}`);
+        console.log(`Downloading artifacts for Build ${buildId}`);
 
         if (!fs.existsSync(downloadDirectory)) {
             console.log(`Directory ${downloadDirectory} does not exist - will be created`);
@@ -276,7 +277,7 @@ export class TfsRestService implements ITfsRestService {
         var agentQueues: taskAgentInterface.TaskAgentQueue[] = await this.taskAgentApi.getAgentQueues(this.teamProjectId, buildQueue);
 
         if (agentQueues.length === 1) {
-            var agentQueue : taskAgentInterface.TaskAgentQueue = agentQueues[0];
+            var agentQueue: taskAgentInterface.TaskAgentQueue = agentQueues[0];
             return agentQueue.id;
         }
 
@@ -324,9 +325,9 @@ export class TfsRestService implements ITfsRestService {
     }
 
     private buildParameterString(buildParameters: string): string {
-        var buildParametersAsDictionary : {[id: string] : string } = {};
+        var buildParametersAsDictionary: { [id: string]: string } = {};
 
-        if (buildParameters === null || buildParameters === undefined){
+        if (buildParameters === null || buildParameters === undefined) {
             return "";
         }
 
@@ -377,5 +378,34 @@ export class TfsRestService implements ITfsRestService {
         var doubleEscapedValue: string = JSON.stringify(escapedValue);
         doubleEscapedValue = doubleEscapedValue.substr(1, doubleEscapedValue.length - 2);
         return `\\\"${doubleEscapedValue}\\\"`;
+    }
+
+    private async setTeamProjectId(connection: vsts.WebApi, teamProject: string): Promise<void> {
+        try {
+            var guidCheckRegex : RegExp = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+            if (guidCheckRegex.test(teamProject)) {
+                console.log("Provided team project was guid.");
+                this.teamProjectId = teamProject;
+                return;
+            }
+
+            console.log("Provided team project was no guid, trying to resolve ID via API...");
+            var coreAgentApi: coreApi.ICoreApi = await connection.getCoreApi();
+            var projects: coreInterfaces.TeamProjectReference[] = await coreAgentApi.getProjects();
+
+            for (let project of projects) {
+                if (project.name === teamProject) {
+                    this.teamProjectId = project.id;
+                    console.log(`Found id for team project ${teamProject}: ${this.teamProjectId}`);
+                    break;
+                }
+            }
+
+            if (this.teamProjectId === "") {
+                throw new Error(`Could not find any Team Project with name ${teamProject}`);
+            }
+        } catch (err) {
+            throw new Error("Could not access projects - you're version of TFS might be too old, please check online for help.");
+        }
     }
 }

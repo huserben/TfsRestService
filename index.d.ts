@@ -1,10 +1,13 @@
+import * as vsts from "vso-node-api";
 import * as buildApi from "vso-node-api/BuildApi";
 import * as buildInterfaces from "vso-node-api/interfaces/BuildInterfaces";
 import * as testInterfaces from "vso-node-api/interfaces/TestInterfaces";
 import * as testApi from "vso-node-api/TestApi";
 import * as taskAgentApi from "vso-node-api/TaskAgentApi";
+import * as baseInterfaces from "vso-node-api/interfaces/common/VsoBaseInterfaces";
 export declare const TeamFoundationCollectionUri: string;
 export declare const TeamProject: string;
+export declare const TeamProjectId: string;
 export declare const RequestedForUsername: string;
 export declare const RequestedForUserId: string;
 export declare const SourceVersion: string;
@@ -36,6 +39,8 @@ export declare class TfsRestService implements ITfsRestService {
     vstsTestApi: testApi.ITestApi;
     taskAgentApi: taskAgentApi.ITaskAgentApi;
     teamProjectId: string;
+    createWebApi: (server: string, authHandler: baseInterfaces.IRequestHandler, options: baseInterfaces.IRequestOptions) => vsts.WebApi;
+    constructor(createWebApi?: (server: string, authHandler: baseInterfaces.IRequestHandler, options: baseInterfaces.IRequestOptions) => vsts.WebApi);
     initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, teamProject: string, ignoreSslError: boolean): Promise<void>;
     getBuildsByStatus(buildDefinitionName: string, statusFilter?: buildInterfaces.BuildStatus): Promise<buildInterfaces.Build[]>;
     triggerBuild(buildDefinitionName: string, branch: string, requestedForUserID: string, sourceVersion: string, demands: string[], queueId: number, buildParameters: string): Promise<buildInterfaces.Build>;
@@ -52,4 +57,5 @@ export declare class TfsRestService implements ITfsRestService {
     private buildParameterString(buildParameters);
     private cleanValue(value);
     escapeParametersForRequestBody(value: string): string;
+    private setTeamProjectId(connection, teamProject);
 }

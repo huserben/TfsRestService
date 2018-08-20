@@ -43,6 +43,7 @@ var buildInterfaces = require("vso-node-api/interfaces/BuildInterfaces");
 var testInterfaces = require("vso-node-api/interfaces/TestInterfaces");
 exports.TeamFoundationCollectionUri = "SYSTEM_TEAMFOUNDATIONCOLLECTIONURI";
 exports.TeamProject = "SYSTEM_TEAMPROJECT";
+exports.TeamProjectId = "SYSTEM_TEAMPROJECTID";
 exports.RequestedForUsername = "BUILD_REQUESTEDFOR";
 exports.RequestedForUserId = "BUILD_REQUESTEDFORID";
 exports.SourceVersion = "BUILD_SOURCEVERSION";
@@ -55,15 +56,20 @@ exports.AuthenticationMethodOAuthToken = "OAuth Token";
 exports.AuthenticationMethodBasicAuthentication = "Basic Authentication";
 exports.AuthenticationMethodPersonalAccessToken = "Personal Access Token";
 var TfsRestService = (function () {
-    function TfsRestService() {
+    function TfsRestService(createWebApi) {
         this.vstsBuildApi = null;
         this.vstsTestApi = null;
         this.taskAgentApi = null;
         this.teamProjectId = "";
+        this.createWebApi = undefined;
+        if (createWebApi === undefined) {
+            createWebApi = function (server, authHandler, options) { return new vsts.WebApi(server, authHandler, options); };
+        }
+        this.createWebApi = createWebApi;
     }
     TfsRestService.prototype.initialize = function (authenticationMethod, username, password, tfsServer, teamProject, ignoreSslError) {
         return __awaiter(this, void 0, void 0, function () {
-            var authHandler, authOptions, connection, _a, _b, _c, coreApi, projects, _i, projects_1, project;
+            var authHandler, authOptions, connection, _a, _b, _c;
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
@@ -89,7 +95,7 @@ var TfsRestService = (function () {
                         authOptions = {
                             ignoreSslError: ignoreSslError
                         };
-                        connection = new vsts.WebApi(tfsServer, authHandler, authOptions);
+                        connection = this.createWebApi(tfsServer, authHandler, authOptions);
                         _a = this;
                         return [4, connection.getBuildApi()];
                     case 1:
@@ -102,22 +108,9 @@ var TfsRestService = (function () {
                         return [4, connection.getTaskAgentApi()];
                     case 3:
                         _c.taskAgentApi = _d.sent();
-                        return [4, connection.getCoreApi()];
+                        return [4, this.setTeamProjectId(connection, teamProject)];
                     case 4:
-                        coreApi = _d.sent();
-                        return [4, coreApi.getProjects()];
-                    case 5:
-                        projects = _d.sent();
-                        for (_i = 0, projects_1 = projects; _i < projects_1.length; _i++) {
-                            project = projects_1[_i];
-                            if (project.name === teamProject) {
-                                this.teamProjectId = project.id;
-                                console.log("Found id for team project " + teamProject + ": " + this.teamProjectId);
-                            }
-                        }
-                        if (this.teamProjectId === "") {
-                            throw new Error("Could not find any Team Project with name " + teamProject);
-                        }
+                        _d.sent();
                         return [2];
                 }
             });
@@ -237,7 +230,7 @@ var TfsRestService = (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        console.log("Downloading artifacts for " + buildId);
+                        console.log("Downloading artifacts for Build " + buildId);
                         if (!fs.existsSync(downloadDirectory)) {
                             console.log("Directory " + downloadDirectory + " does not exist - will be created");
                             fs.mkdirSync(downloadDirectory);
@@ -445,6 +438,46 @@ var TfsRestService = (function () {
         var doubleEscapedValue = JSON.stringify(escapedValue);
         doubleEscapedValue = doubleEscapedValue.substr(1, doubleEscapedValue.length - 2);
         return "\\\"" + doubleEscapedValue + "\\\"";
+    };
+    TfsRestService.prototype.setTeamProjectId = function (connection, teamProject) {
+        return __awaiter(this, void 0, void 0, function () {
+            var guidCheckRegex, coreAgentApi, projects, _i, projects_1, project, err_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 3, , 4]);
+                        guidCheckRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+                        if (guidCheckRegex.test(teamProject)) {
+                            console.log("Provided team project was guid.");
+                            this.teamProjectId = teamProject;
+                            return [2];
+                        }
+                        console.log("Provided team project was no guid, trying to resolve ID via API...");
+                        return [4, connection.getCoreApi()];
+                    case 1:
+                        coreAgentApi = _a.sent();
+                        return [4, coreAgentApi.getProjects()];
+                    case 2:
+                        projects = _a.sent();
+                        for (_i = 0, projects_1 = projects; _i < projects_1.length; _i++) {
+                            project = projects_1[_i];
+                            if (project.name === teamProject) {
+                                this.teamProjectId = project.id;
+                                console.log("Found id for team project " + teamProject + ": " + this.teamProjectId);
+                                break;
+                            }
+                        }
+                        if (this.teamProjectId === "") {
+                            throw new Error("Could not find any Team Project with name " + teamProject);
+                        }
+                        return [3, 4];
+                    case 3:
+                        err_1 = _a.sent();
+                        throw new Error("Could not access projects - you're version of TFS might be too old, please check online for help.");
+                    case 4: return [2];
+                }
+            });
+        });
     };
     return TfsRestService;
 }());

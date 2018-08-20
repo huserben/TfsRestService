@@ -27,6 +27,7 @@
     "@types/mocha": "^2.2.44",
     "@types/node": "^8.0.47",
     "@types/sinon": "^2.3.7",
+    "ts-sinon": "^1.0.12",
     "gulp": "^3.9.1",
     "gulp-cli": "^1.4.0",
     "gulp-mocha": "^4.3.1",
