@@ -69,7 +69,7 @@ var TfsRestService = (function () {
     }
     TfsRestService.prototype.initialize = function (authenticationMethod, username, password, tfsServer, teamProject, ignoreSslError) {
         return __awaiter(this, void 0, void 0, function () {
-            var authHandler, authOptions, connection, _a, _b, _c;
+            var authHandler, requestOptions, connection, _a, _b, _c;
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
@@ -93,10 +93,11 @@ var TfsRestService = (function () {
                             default:
                                 throw new Error("Cannot handle authentication method " + authenticationMethod);
                         }
-                        authOptions = {
-                            ignoreSslError: ignoreSslError
+                        requestOptions = {
+                            ignoreSslError: ignoreSslError,
+                            socketTimeout: 10000
                         };
-                        connection = this.createWebApi(tfsServer, authHandler, authOptions);
+                        connection = this.createWebApi(tfsServer, authHandler, requestOptions);
                         _a = this;
                         return [4, connection.getBuildApi()];
                     case 1:
@@ -135,6 +136,7 @@ var TfsRestService = (function () {
     };
     TfsRestService.prototype.triggerBuild = function (buildDefinitionName, branch, requestedForUserID, sourceVersion, demands, queueId, buildParameters) {
         return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
             var buildId, buildToTrigger, result;
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -160,7 +162,7 @@ var TfsRestService = (function () {
                         if (demands !== null && demands.length > 0) {
                             buildToTrigger.demands = demands;
                         }
-                        return [4, this.vstsBuildApi.queueBuild(buildToTrigger, this.teamProjectId, true)];
+                        return [4, this.makeRequest(function () { return _this.vstsBuildApi.queueBuild(buildToTrigger, _this.teamProjectId, true); })];
                     case 2:
                         result = _a.sent();
                         return [2, result];
@@ -208,6 +210,7 @@ var TfsRestService = (function () {
     };
     TfsRestService.prototype.cancelBuild = function (buildId) {
         return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
             var buildInfo, requestBody;
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -219,7 +222,9 @@ var TfsRestService = (function () {
                             return [2];
                         }
                         requestBody = { status: buildInterfaces.BuildStatus.Cancelling };
-                        this.vstsBuildApi.updateBuild(requestBody, buildId, this.teamProjectId);
+                        return [4, this.makeRequest(function () { return _this.vstsBuildApi.updateBuild(requestBody, buildId, _this.teamProjectId); })];
+                    case 2:
+                        _a.sent();
                         return [2];
                 }
             });
@@ -227,7 +232,8 @@ var TfsRestService = (function () {
     };
     TfsRestService.prototype.downloadArtifacts = function (buildId, downloadDirectory) {
         return __awaiter(this, void 0, void 0, function () {
-            var result, _i, result_1, artifact, fileFormat, fileName, index, artifactStream, fileStream;
+            var _this = this;
+            var result, _loop_1, this_1, fileFormat, fileName, index, _i, result_1, artifact;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -239,42 +245,55 @@ var TfsRestService = (function () {
                         if (!downloadDirectory.endsWith("\\")) {
                             downloadDirectory += "\\";
                         }
-                        return [4, this.vstsBuildApi.getArtifacts(buildId, this.teamProjectId)];
+                        return [4, this.makeRequest(function () { return _this.vstsBuildApi.getArtifacts(buildId, _this.teamProjectId); })];
                     case 1:
                         result = _a.sent();
                         if (result.length === 0) {
                             console.log("No artifacts found for build " + buildId + " - skipping...");
                         }
                         console.log("Found " + result.length + " artifact(s)");
+                        _loop_1 = function (artifact) {
+                            var artifactStream, fileStream;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0:
+                                        if (artifact.resource.type !== "Container") {
+                                            console.log("Cannot download artifact " + artifact.name + ". Only Containers are supported (type is \"" + artifact.resource.type + ")\"");
+                                            return [2, "continue"];
+                                        }
+                                        console.log("Downloading artifact " + artifact.name + "...");
+                                        fileFormat = url.parse(artifact.resource.downloadUrl, true).query.$format;
+                                        if (fileFormat === null || fileFormat === undefined) {
+                                            fileFormat = "zip";
+                                        }
+                                        fileName = artifact.name + "." + fileFormat;
+                                        index = 1;
+                                        while (fs.existsSync("" + downloadDirectory + fileName)) {
+                                            console.log(fileName + " already exists...");
+                                            fileName = "" + artifact.name + index + "." + fileFormat;
+                                            index++;
+                                        }
+                                        return [4, this_1.makeRequest(function () { return _this.vstsBuildApi.getArtifactContentZip(buildId, artifact.name, _this.teamProjectId); })];
+                                    case 1:
+                                        artifactStream = _a.sent();
+                                        fileStream = fs.createWriteStream(downloadDirectory + fileName);
+                                        artifactStream.pipe(fileStream);
+                                        fileStream.on("close", function () {
+                                            console.log("Stored artifact here: " + downloadDirectory + fileName);
+                                        });
+                                        return [2];
+                                }
+                            });
+                        };
+                        this_1 = this;
                         _i = 0, result_1 = result;
                         _a.label = 2;
                     case 2:
                         if (!(_i < result_1.length)) return [3, 5];
                         artifact = result_1[_i];
-                        if (artifact.resource.type !== "Container") {
-                            console.log("Cannot download artifact " + artifact.name + ". Only Containers are supported (type is \"" + artifact.resource.type + ")\"");
-                            return [3, 4];
-                        }
-                        console.log("Downloading artifact " + artifact.name + "...");
-                        fileFormat = url.parse(artifact.resource.downloadUrl, true).query.$format;
-                        if (fileFormat === null || fileFormat === undefined) {
-                            fileFormat = "zip";
-                        }
-                        fileName = artifact.name + "." + fileFormat;
-                        index = 1;
-                        while (fs.existsSync("" + downloadDirectory + fileName)) {
-                            console.log(fileName + " already exists...");
-                            fileName = "" + artifact.name + index + "." + fileFormat;
-                            index++;
-                        }
-                        return [4, this.vstsBuildApi.getArtifactContentZip(buildId, artifact.name, this.teamProjectId)];
+                        return [5, _loop_1(artifact)];
                     case 3:
-                        artifactStream = _a.sent();
-                        fileStream = fs.createWriteStream(downloadDirectory + fileName);
-                        artifactStream.pipe(fileStream);
-                        fileStream.on("close", function () {
-                            console.log("Stored artifact here: " + downloadDirectory + fileName);
-                        });
+                        _a.sent();
                         _a.label = 4;
                     case 4:
                         _i++;
@@ -286,10 +305,11 @@ var TfsRestService = (function () {
     };
     TfsRestService.prototype.getTestRuns = function (testRunName, numberOfRunsToFetch) {
         return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
             var testRunSummaries, testRuns;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4, this.vstsTestApi.getTestRuns(this.teamProjectId)];
+                    case 0: return [4, this.makeRequest(function () { return _this.vstsTestApi.getTestRuns(_this.teamProjectId); })];
                     case 1:
                         testRunSummaries = _a.sent();
                         testRuns = new linqts_1.List(testRunSummaries)
@@ -305,10 +325,11 @@ var TfsRestService = (function () {
     };
     TfsRestService.prototype.getQueueIdByName = function (buildQueue) {
         return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
             var agentQueues, agentQueue, _i, agentQueues_1, queue;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4, this.taskAgentApi.getAgentQueues(this.teamProjectId, buildQueue)];
+                    case 0: return [4, this.makeRequest(function () { return _this.taskAgentApi.getAgentQueues(_this.teamProjectId, buildQueue); })];
                     case 1:
                         agentQueues = _a.sent();
                         if (agentQueues.length === 1) {
@@ -353,10 +374,11 @@ var TfsRestService = (function () {
     };
     TfsRestService.prototype.getBuildDefinitionId = function (buildDefinitionName) {
         return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
             var result;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4, this.vstsBuildApi.getDefinitions(this.teamProjectId, buildDefinitionName)];
+                    case 0: return [4, this.makeRequest(function () { return _this.vstsBuildApi.getDefinitions(_this.teamProjectId, buildDefinitionName); })];
                     case 1:
                         result = _a.sent();
                         if (result.length === 0) {
@@ -369,10 +391,11 @@ var TfsRestService = (function () {
     };
     TfsRestService.prototype.getAssociatedChanges = function (build) {
         return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
             var result;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4, this.vstsBuildApi.getBuildChanges(this.teamProjectId, build.id)];
+                    case 0: return [4, this.makeRequest(function () { return _this.vstsBuildApi.getBuildChanges(_this.teamProjectId, build.id); })];
                     case 1:
                         result = _a.sent();
                         return [2, result];
@@ -382,10 +405,11 @@ var TfsRestService = (function () {
     };
     TfsRestService.prototype.getBuildInfo = function (buildId) {
         return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
             var build;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4, this.vstsBuildApi.getBuild(buildId, this.teamProjectId)];
+                    case 0: return [4, this.makeRequest(function () { return _this.vstsBuildApi.getBuild(buildId, _this.teamProjectId); })];
                     case 1:
                         build = _a.sent();
                         return [2, build];
@@ -501,6 +525,35 @@ var TfsRestService = (function () {
                 }
                 break;
         }
+    };
+    TfsRestService.prototype.makeRequest = function (requestFunction) {
+        return __awaiter(this, void 0, void 0, function () {
+            var maxRequestTryCount, requestCount, error_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        maxRequestTryCount = 5;
+                        requestCount = 0;
+                        _a.label = 1;
+                    case 1:
+                        if (!(requestCount < maxRequestTryCount)) return [3, 6];
+                        _a.label = 2;
+                    case 2:
+                        _a.trys.push([2, 4, , 5]);
+                        return [4, requestFunction()];
+                    case 3: return [2, _a.sent()];
+                    case 4:
+                        error_1 = _a.sent();
+                        console.log("Error during request (" + (requestCount + 1) + "/" + maxRequestTryCount + ")");
+                        console.log("Error message: " + error_1);
+                        return [3, 5];
+                    case 5:
+                        requestCount++;
+                        return [3, 1];
+                    case 6: throw new Error("Request failed after " + maxRequestTryCount + " tries - see error messages in the log");
+                }
+            });
+        });
     };
     return TfsRestService;
 }());

@@ -104,11 +104,12 @@ export class TfsRestService implements ITfsRestService {
                 throw new Error("Cannot handle authentication method " + authenticationMethod);
         }
 
-        let authOptions: baseInterfaces.IRequestOptions = {
-            ignoreSslError: ignoreSslError
+        let requestOptions: baseInterfaces.IRequestOptions = {
+            ignoreSslError: ignoreSslError,
+            socketTimeout: 10000
         };
 
-        let connection: vsts.WebApi = this.createWebApi(tfsServer, authHandler, authOptions);
+        let connection: vsts.WebApi = this.createWebApi(tfsServer, authHandler, requestOptions);
         this.vstsBuildApi = await connection.getBuildApi();
         this.vstsTestApi = await connection.getTestApi();
         this.taskAgentApi = await connection.getTaskAgentApi();
@@ -161,7 +162,8 @@ export class TfsRestService implements ITfsRestService {
             buildToTrigger.demands = demands;
         }
 
-        var result: buildInterfaces.Build = await this.vstsBuildApi.queueBuild(buildToTrigger, this.teamProjectId, true);
+        var result: buildInterfaces.Build = await this.makeRequest(
+            () => this.vstsBuildApi.queueBuild(buildToTrigger, this.teamProjectId, true));
 
         return result;
     }
@@ -202,7 +204,8 @@ export class TfsRestService implements ITfsRestService {
 
         var requestBody: any = { status: buildInterfaces.BuildStatus.Cancelling };
 
-        this.vstsBuildApi.updateBuild(requestBody, buildId, this.teamProjectId);
+        await this.makeRequest(
+            () => this.vstsBuildApi.updateBuild(requestBody, buildId, this.teamProjectId));
     }
 
     public async downloadArtifacts(buildId: number, downloadDirectory: string): Promise<void> {
@@ -218,7 +221,7 @@ export class TfsRestService implements ITfsRestService {
         }
 
 
-        var result: buildInterfaces.BuildArtifact[] = await this.vstsBuildApi.getArtifacts(buildId, this.teamProjectId);
+        var result: buildInterfaces.BuildArtifact[] = await this.makeRequest(() => this.vstsBuildApi.getArtifacts(buildId, this.teamProjectId));
 
         if (result.length === 0) {
             console.log(`No artifacts found for build ${buildId} - skipping...`);
@@ -250,8 +253,8 @@ export class TfsRestService implements ITfsRestService {
                 index++;
             }
 
-            const artifactStream: NodeJS.ReadableStream = await this.vstsBuildApi.getArtifactContentZip(
-                buildId, artifact.name, this.teamProjectId);
+            const artifactStream: NodeJS.ReadableStream = await this.makeRequest(
+                () => this.vstsBuildApi.getArtifactContentZip(buildId, artifact.name, this.teamProjectId));
             const fileStream: any = fs.createWriteStream(downloadDirectory + fileName);
             artifactStream.pipe(fileStream);
             fileStream.on("close", () => {
@@ -261,7 +264,7 @@ export class TfsRestService implements ITfsRestService {
     }
 
     public async getTestRuns(testRunName: string, numberOfRunsToFetch: number): Promise<testInterfaces.TestRun[]> {
-        var testRunSummaries: testInterfaces.TestRun[] = await this.vstsTestApi.getTestRuns(this.teamProjectId);
+        var testRunSummaries: testInterfaces.TestRun[] = await this.makeRequest(() => this.vstsTestApi.getTestRuns(this.teamProjectId));
 
         // reverse to fetch newest to oldest.
         let testRuns: testInterfaces.TestRun[] = new List<testInterfaces.TestRun>(testRunSummaries)
@@ -276,7 +279,7 @@ export class TfsRestService implements ITfsRestService {
     }
 
     public async getQueueIdByName(buildQueue: string): Promise<number> {
-        var agentQueues: taskAgentInterface.TaskAgentQueue[] = await this.taskAgentApi.getAgentQueues(this.teamProjectId, buildQueue);
+        var agentQueues: taskAgentInterface.TaskAgentQueue[] = await this.makeRequest(() => this.taskAgentApi.getAgentQueues(this.teamProjectId, buildQueue));
 
         if (agentQueues.length === 1) {
             var agentQueue: taskAgentInterface.TaskAgentQueue = agentQueues[0];
@@ -305,8 +308,8 @@ export class TfsRestService implements ITfsRestService {
 
     public async getBuildDefinitionId(buildDefinitionName: string): Promise<number> {
 
-        var result: buildInterfaces.BuildDefinitionReference[] = await this.vstsBuildApi.getDefinitions(
-            this.teamProjectId, buildDefinitionName);
+        var result: buildInterfaces.BuildDefinitionReference[] = await this.makeRequest(
+            () => this.vstsBuildApi.getDefinitions(this.teamProjectId, buildDefinitionName));
 
         if (result.length === 0) {
             throw new Error(`Did not find any build definition with this name: ${buildDefinitionName}`);
@@ -316,13 +319,15 @@ export class TfsRestService implements ITfsRestService {
     }
 
     public async getAssociatedChanges(build: buildInterfaces.Build): Promise<buildInterfaces.Change[]> {
-        var result: buildInterfaces.Change[] = await this.vstsBuildApi.getBuildChanges(this.teamProjectId, build.id);
+        var result: buildInterfaces.Change[] = await this.makeRequest(
+            () => this.vstsBuildApi.getBuildChanges(this.teamProjectId, build.id));
         return result;
     }
 
     public async getBuildInfo(buildId: number): Promise<buildInterfaces.Build> {
 
-        var build: buildInterfaces.Build = await this.vstsBuildApi.getBuild(buildId, this.teamProjectId);
+        var build: buildInterfaces.Build = await this.makeRequest(
+            () => this.vstsBuildApi.getBuild(buildId, this.teamProjectId));
         return build;
     }
 
@@ -432,5 +437,19 @@ export class TfsRestService implements ITfsRestService {
                 }
                 break;
         }
+    }
+
+    private async makeRequest<T>(requestFunction: () => Promise<T>): Promise<T> {
+        var maxRequestTryCount: number = 5;
+        for (var requestCount: number = 0; requestCount < maxRequestTryCount; requestCount++) {
+            try {
+                return await requestFunction();
+            } catch (error) {
+                console.log(`Error during request (${requestCount + 1}/${maxRequestTryCount})`);
+                console.log(`Error message: ${error}`);
+            }
+        }
+
+        throw new Error(`Request failed after ${maxRequestTryCount} tries - see error messages in the log`);
     }
 }

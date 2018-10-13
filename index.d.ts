@@ -59,4 +59,5 @@ export declare class TfsRestService implements ITfsRestService {
     escapeParametersForRequestBody(value: string): string;
     private setTeamProjectId(connection, teamProject);
     private verifyAuthenticationMethod(authenticationMethod, username, password);
+    private makeRequest<T>(requestFunction);
 }
