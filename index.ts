@@ -83,6 +83,8 @@ export class TfsRestService implements ITfsRestService {
             throw new Error("Team Project has to be defined!");
         }
 
+        this.verifyAuthenticationMethod(authenticationMethod, username, password);
+
         let authHandler: baseInterfaces.IRequestHandler;
 
         switch (authenticationMethod) {
@@ -382,7 +384,7 @@ export class TfsRestService implements ITfsRestService {
 
     private async setTeamProjectId(connection: vsts.WebApi, teamProject: string): Promise<void> {
         try {
-            var guidCheckRegex : RegExp = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+            var guidCheckRegex: RegExp = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
             if (guidCheckRegex.test(teamProject)) {
                 console.log("Provided team project was guid.");
                 this.teamProjectId = teamProject;
@@ -406,6 +408,29 @@ export class TfsRestService implements ITfsRestService {
             }
         } catch (err) {
             throw new Error("Could not access projects - you're version of TFS might be too old, please check online for help.");
+        }
+    }
+
+    private verifyAuthenticationMethod(authenticationMethod: string, username: string, password: string): void {
+        switch (authenticationMethod) {
+            case AuthenticationMethodOAuthToken:
+                if (password === undefined || password === null || password === "") {
+                    throw new Error("No valid OAuth token provided. Please check that you have the OAuth Token Access allowed for your builds.");
+                }
+                break;
+            case AuthenticationMethodBasicAuthentication:
+                if (username === undefined || username === null || username === "") {
+                    throw new Error("No Username provided. Please check that you specified the user correctly in the configuration.");
+                }
+                if (password === undefined || password === null || password === "") {
+                    throw new Error("No password provided. Please check that you specified the password correctly in the configuration.");
+                }
+                break;
+            case AuthenticationMethodPersonalAccessToken:
+                if (password === undefined || password === null || password === "") {
+                    throw new Error("No valid Personal Access Token provided. Please check that you specified the token to be used correctly in the configuration.");
+                }
+                break;
         }
     }
 }

@@ -76,6 +76,7 @@ var TfsRestService = (function () {
                         if (teamProject === "" || teamProject === undefined) {
                             throw new Error("Team Project has to be defined!");
                         }
+                        this.verifyAuthenticationMethod(authenticationMethod, username, password);
                         switch (authenticationMethod) {
                             case exports.AuthenticationMethodOAuthToken:
                                 console.log("Using OAuth Access Token");
@@ -479,7 +480,28 @@ var TfsRestService = (function () {
             });
         });
     };
+    TfsRestService.prototype.verifyAuthenticationMethod = function (authenticationMethod, username, password) {
+        switch (authenticationMethod) {
+            case exports.AuthenticationMethodOAuthToken:
+                if (password === undefined || password === null || password === "") {
+                    throw new Error("No valid OAuth token provided. Please check that you have the OAuth Token Access allowed for your builds.");
+                }
+                break;
+            case exports.AuthenticationMethodBasicAuthentication:
+                if (username === undefined || username === null || username === "") {
+                    throw new Error("No Username provided. Please check that you specified the user correctly in the configuration.");
+                }
+                if (password === undefined || password === null || password === "") {
+                    throw new Error("No password provided. Please check that you specified the password correctly in the configuration.");
+                }
+                break;
+            case exports.AuthenticationMethodPersonalAccessToken:
+                if (password === undefined || password === null || password === "") {
+                    throw new Error("No valid Personal Access Token provided. Please check that you specified the token to be used correctly in the configuration.");
+                }
+                break;
+        }
+    };
     return TfsRestService;
 }());
 exports.TfsRestService = TfsRestService;
-//# sourceMappingURL=index.js.map
