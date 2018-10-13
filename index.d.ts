@@ -1,10 +1,10 @@
-import * as vsts from "vso-node-api";
-import * as buildApi from "vso-node-api/BuildApi";
-import * as buildInterfaces from "vso-node-api/interfaces/BuildInterfaces";
-import * as testInterfaces from "vso-node-api/interfaces/TestInterfaces";
-import * as testApi from "vso-node-api/TestApi";
-import * as taskAgentApi from "vso-node-api/TaskAgentApi";
-import * as baseInterfaces from "vso-node-api/interfaces/common/VsoBaseInterfaces";
+import * as vsts from "azure-devops-node-api";
+import * as buildApi from "azure-devops-node-api/BuildApi";
+import * as buildInterfaces from "azure-devops-node-api/interfaces/BuildInterfaces";
+import * as testInterfaces from "azure-devops-node-api/interfaces/TestInterfaces";
+import * as testApi from "azure-devops-node-api/TestApi";
+import * as taskAgentApi from "azure-devops-node-api/TaskAgentApi";
+import * as baseInterfaces from "azure-devops-node-api/interfaces/common/VsoBaseInterfaces";
 export declare const TeamFoundationCollectionUri: string;
 export declare const TeamProject: string;
 export declare const TeamProjectId: string;

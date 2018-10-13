@@ -87,3 +87,4 @@ describe("TFS Rest Service Tests", function () {
         });
     }); });
 });
+//# sourceMappingURL=restservicetests.js.map

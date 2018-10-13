@@ -1,16 +1,16 @@
 import * as fs from "fs";
 import * as url from "url";
 import { List } from "linqts";
-import * as vsts from "vso-node-api";
-import * as buildApi from "vso-node-api/BuildApi";
-import * as buildInterfaces from "vso-node-api/interfaces/BuildInterfaces";
-import * as testInterfaces from "vso-node-api/interfaces/TestInterfaces";
-import * as testApi from "vso-node-api/TestApi";
-import * as taskAgentApi from "vso-node-api/TaskAgentApi";
-import * as coreApi from "vso-node-api/CoreApi";
-import * as coreInterfaces from "vso-node-api/interfaces/CoreInterfaces";
-import * as taskAgentInterface from "vso-node-api/interfaces/TaskAgentInterfaces";
-import * as baseInterfaces from "vso-node-api/interfaces/common/VsoBaseInterfaces";
+import * as vsts from "azure-devops-node-api";
+import * as buildApi from "azure-devops-node-api/BuildApi";
+import * as buildInterfaces from "azure-devops-node-api/interfaces/BuildInterfaces";
+import * as testInterfaces from "azure-devops-node-api/interfaces/TestInterfaces";
+import * as testApi from "azure-devops-node-api/TestApi";
+import * as taskAgentApi from "azure-devops-node-api/TaskAgentApi";
+import * as coreApi from "azure-devops-node-api/CoreApi";
+import * as coreInterfaces from "azure-devops-node-api/interfaces/CoreInterfaces";
+import * as taskAgentInterface from "azure-devops-node-api/interfaces/TaskAgentInterfaces";
+import * as baseInterfaces from "azure-devops-node-api/interfaces/common/VsoBaseInterfaces";
 
 export const TeamFoundationCollectionUri: string = "SYSTEM_TEAMFOUNDATIONCOLLECTIONURI";
 export const TeamProject: string = "SYSTEM_TEAMPROJECT";

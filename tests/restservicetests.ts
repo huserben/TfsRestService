@@ -1,15 +1,13 @@
-import assert = require("assert");
-import * as sinon from "sinon";
 import * as TypeMoq from "typemoq";
 
-import * as vsts from "vso-node-api";
+import * as vsts from "azure-devops-node-api";
 import * as index from "../index";
-import { IBuildApi } from "vso-node-api/BuildApi";
-import { ITestApi } from "vso-node-api/TestApi";
-import { ITaskAgentApi } from "vso-node-api/TaskAgentApi";
-import { ICoreApi } from "vso-node-api/CoreApi";
-import { TeamProjectReference } from "vso-node-api/interfaces/CoreInterfaces";
-import { IRequestHandler, IRequestOptions } from "vso-node-api/interfaces/common/VsoBaseInterfaces";
+import { IBuildApi } from "azure-devops-node-api/BuildApi";
+import { ITestApi } from "azure-devops-node-api/TestApi";
+import { ITaskAgentApi } from "azure-devops-node-api/TaskAgentApi";
+import { ICoreApi } from "azure-devops-node-api/CoreApi";
+import { TeamProjectReference } from "azure-devops-node-api/interfaces/CoreInterfaces";
+import { IRequestHandler, IRequestOptions } from "azure-devops-node-api/interfaces/common/VsoBaseInterfaces";
 
 
 describe("TFS Rest Service Tests", () => {

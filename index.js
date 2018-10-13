@@ -38,9 +38,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var fs = require("fs");
 var url = require("url");
 var linqts_1 = require("linqts");
-var vsts = require("vso-node-api");
-var buildInterfaces = require("vso-node-api/interfaces/BuildInterfaces");
-var testInterfaces = require("vso-node-api/interfaces/TestInterfaces");
+var vsts = require("azure-devops-node-api");
+var buildInterfaces = require("azure-devops-node-api/interfaces/BuildInterfaces");
+var testInterfaces = require("azure-devops-node-api/interfaces/TestInterfaces");
 exports.TeamFoundationCollectionUri = "SYSTEM_TEAMFOUNDATIONCOLLECTIONURI";
 exports.TeamProject = "SYSTEM_TEAMPROJECT";
 exports.TeamProjectId = "SYSTEM_TEAMPROJECTID";
@@ -505,3 +505,4 @@ var TfsRestService = (function () {
     return TfsRestService;
 }());
 exports.TfsRestService = TfsRestService;
+//# sourceMappingURL=index.js.map
