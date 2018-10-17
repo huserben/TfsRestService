@@ -70,21 +70,5 @@ describe("TFS Rest Service Tests", function () {
         }); }); });
         subject = new index.TfsRestService(function (server, authHandler, options) { return webApiMock.object; });
     });
-    it("sets default options when initializing", function () { return __awaiter(_this, void 0, void 0, function () {
-        var ServerUrl, IgnoreSslError, ExpectedTeamProject;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    ServerUrl = "https://www.myTfsServer.com:8080";
-                    IgnoreSslError = true;
-                    ExpectedTeamProject = "TeamProject";
-                    return [4, subject.initialize(index.AuthenticationMethodBasicAuthentication, "user", "pw", ServerUrl, ExpectedTeamProject, IgnoreSslError)];
-                case 1:
-                    _a.sent();
-                    taskAgentApiMock.verify(function (api) { return api.getAgentQueue(12); }, TypeMoq.Times.never());
-                    return [2];
-            }
-        });
-    }); });
 });
 //# sourceMappingURL=restservicetests.js.map

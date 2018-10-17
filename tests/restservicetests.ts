@@ -41,6 +41,7 @@ describe("TFS Rest Service Tests", () => {
 
         subject = new index.TfsRestService((server: string, authHandler: IRequestHandler, options: IRequestOptions) => webApiMock.object);
     });
+    /*
 
     it("sets default options when initializing", async () => {
         const ServerUrl: string = "https://www.myTfsServer.com:8080";
@@ -52,7 +53,6 @@ describe("TFS Rest Service Tests", () => {
 
         taskAgentApiMock.verify(api => api.getAgentQueue(12), TypeMoq.Times.never());
     });
-    /*
         it("sets authentication options correct when using OAuth", () => {
             const OAuthToken: string = "dsflk12903dfslkaj09123";
     
