@@ -105,8 +105,7 @@ export class TfsRestService implements ITfsRestService {
         }
 
         let requestOptions: baseInterfaces.IRequestOptions = {
-            ignoreSslError: ignoreSslError,
-            socketTimeout: 10000
+            ignoreSslError: ignoreSslError
         };
 
         let connection: vsts.WebApi = this.createWebApi(tfsServer, authHandler, requestOptions);
