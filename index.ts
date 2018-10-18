@@ -252,8 +252,8 @@ export class TfsRestService implements ITfsRestService {
                 index++;
             }
 
-            const artifactStream: NodeJS.ReadableStream = await this.makeRequest(
-                () => this.vstsBuildApi.getArtifactContentZip(buildId, artifact.name, this.teamProjectId));
+            const artifactStream: NodeJS.ReadableStream = await this.vstsBuildApi.getArtifactContentZip(
+                buildId, artifact.name, this.teamProjectId);
             const fileStream: any = fs.createWriteStream(downloadDirectory + fileName);
             artifactStream.pipe(fileStream);
             fileStream.on("close", () => {

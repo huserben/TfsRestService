@@ -94,8 +94,7 @@ var TfsRestService = (function () {
                                 throw new Error("Cannot handle authentication method " + authenticationMethod);
                         }
                         requestOptions = {
-                            ignoreSslError: ignoreSslError,
-                            socketTimeout: 10000
+                            ignoreSslError: ignoreSslError
                         };
                         connection = this.createWebApi(tfsServer, authHandler, requestOptions);
                         _a = this;
@@ -233,7 +232,7 @@ var TfsRestService = (function () {
     TfsRestService.prototype.downloadArtifacts = function (buildId, downloadDirectory) {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
-            var result, _loop_1, this_1, fileFormat, fileName, index, _i, result_1, artifact;
+            var result, _i, result_1, artifact, fileFormat, fileName, index, artifactStream, fileStream;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -252,48 +251,35 @@ var TfsRestService = (function () {
                             console.log("No artifacts found for build " + buildId + " - skipping...");
                         }
                         console.log("Found " + result.length + " artifact(s)");
-                        _loop_1 = function (artifact) {
-                            var artifactStream, fileStream;
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0:
-                                        if (artifact.resource.type !== "Container") {
-                                            console.log("Cannot download artifact " + artifact.name + ". Only Containers are supported (type is \"" + artifact.resource.type + ")\"");
-                                            return [2, "continue"];
-                                        }
-                                        console.log("Downloading artifact " + artifact.name + "...");
-                                        fileFormat = url.parse(artifact.resource.downloadUrl, true).query.$format;
-                                        if (fileFormat === null || fileFormat === undefined) {
-                                            fileFormat = "zip";
-                                        }
-                                        fileName = artifact.name + "." + fileFormat;
-                                        index = 1;
-                                        while (fs.existsSync("" + downloadDirectory + fileName)) {
-                                            console.log(fileName + " already exists...");
-                                            fileName = "" + artifact.name + index + "." + fileFormat;
-                                            index++;
-                                        }
-                                        return [4, this_1.makeRequest(function () { return _this.vstsBuildApi.getArtifactContentZip(buildId, artifact.name, _this.teamProjectId); })];
-                                    case 1:
-                                        artifactStream = _a.sent();
-                                        fileStream = fs.createWriteStream(downloadDirectory + fileName);
-                                        artifactStream.pipe(fileStream);
-                                        fileStream.on("close", function () {
-                                            console.log("Stored artifact here: " + downloadDirectory + fileName);
-                                        });
-                                        return [2];
-                                }
-                            });
-                        };
-                        this_1 = this;
                         _i = 0, result_1 = result;
                         _a.label = 2;
                     case 2:
                         if (!(_i < result_1.length)) return [3, 5];
                         artifact = result_1[_i];
-                        return [5, _loop_1(artifact)];
+                        if (artifact.resource.type !== "Container") {
+                            console.log("Cannot download artifact " + artifact.name + ". Only Containers are supported (type is \"" + artifact.resource.type + ")\"");
+                            return [3, 4];
+                        }
+                        console.log("Downloading artifact " + artifact.name + "...");
+                        fileFormat = url.parse(artifact.resource.downloadUrl, true).query.$format;
+                        if (fileFormat === null || fileFormat === undefined) {
+                            fileFormat = "zip";
+                        }
+                        fileName = artifact.name + "." + fileFormat;
+                        index = 1;
+                        while (fs.existsSync("" + downloadDirectory + fileName)) {
+                            console.log(fileName + " already exists...");
+                            fileName = "" + artifact.name + index + "." + fileFormat;
+                            index++;
+                        }
+                        return [4, this.vstsBuildApi.getArtifactContentZip(buildId, artifact.name, this.teamProjectId)];
                     case 3:
-                        _a.sent();
+                        artifactStream = _a.sent();
+                        fileStream = fs.createWriteStream(downloadDirectory + fileName);
+                        artifactStream.pipe(fileStream);
+                        fileStream.on("close", function () {
+                            console.log("Stored artifact here: " + downloadDirectory + fileName);
+                        });
                         _a.label = 4;
                     case 4:
                         _i++;
