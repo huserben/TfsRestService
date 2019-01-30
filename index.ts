@@ -18,6 +18,8 @@ export const TeamProjectId: string = "SYSTEM_TEAMPROJECTID";
 
 export const RequestedForUsername: string = "BUILD_REQUESTEDFOR";
 export const RequestedForUserId: string = "BUILD_REQUESTEDFORID";
+export const ReleaseRequestedForUsername: string = "RELEASE_REQUESTEDFOR";
+export const ReleaseRequestedForId: string = "RELEASE_REQUESTEDFORID";
 
 export const SourceVersion: string = "BUILD_SOURCEVERSION";
 export const SourceBranch: string = "BUILD_SOURCEBRANCH";
