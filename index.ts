@@ -11,6 +11,7 @@ import * as coreApi from "azure-devops-node-api/CoreApi";
 import * as coreInterfaces from "azure-devops-node-api/interfaces/CoreInterfaces";
 import * as taskAgentInterface from "azure-devops-node-api/interfaces/TaskAgentInterfaces";
 import * as baseInterfaces from "azure-devops-node-api/interfaces/common/VsoBaseInterfaces";
+import { IRequestHandler } from "typed-rest-client/Interfaces";
 
 export const TeamFoundationCollectionUri: string = "SYSTEM_TEAMFOUNDATIONCOLLECTIONURI";
 export const TeamProject: string = "SYSTEM_TEAMPROJECT";
@@ -59,23 +60,84 @@ export interface ITfsRestService {
     cancelBuild(buildId: number): Promise<void>;
 }
 
+export interface IAzureDevOpsWebApi {
+    getBearerHandler(bearerToken: string): IRequestHandler;
+    getBasicHandler(username: string, password: string): IRequestHandler;
+    getHandlerFromToken(token: string): IRequestHandler;
+
+    initializeConnection(tfsServer: string, authHandler: IRequestHandler, requestOptions: baseInterfaces.IRequestOptions): void;
+
+    getBuildApi(): Promise<buildApi.IBuildApi>;
+    getTestApi(): Promise<testApi.ITestApi>;
+    getTaskAgentApi(): Promise<taskAgentApi.ITaskAgentApi>;
+    getCoreApi(): Promise<coreApi.ICoreApi>;
+}
+
+class AzureDevOpsWebApi implements IAzureDevOpsWebApi {
+    connection: vsts.WebApi = null;
+
+    public initializeConnection(tfsServer: string, authHandler: IRequestHandler, requestOptions: baseInterfaces.IRequestOptions): void {
+        this.connection = new vsts.WebApi(tfsServer, authHandler, requestOptions);
+    }
+
+    public async getBuildApi(): Promise<buildApi.IBuildApi> {
+        this.verifyConnection();
+
+        return await this.connection.getBuildApi();
+    }
+
+    public async getTestApi(): Promise<testApi.ITestApi> {
+        this.verifyConnection();
+
+        return await this.connection.getTestApi();
+    }
+
+    public async getTaskAgentApi(): Promise<taskAgentApi.ITaskAgentApi> {
+        this.verifyConnection();
+
+        return await this.connection.getTaskAgentApi();
+    }
+
+    public async getCoreApi(): Promise<coreApi.ICoreApi> {
+        this.verifyConnection();
+
+        return await this.connection.getCoreApi();
+    }
+
+    public getBearerHandler(bearerToken: string): IRequestHandler {
+        return vsts.getBearerHandler(bearerToken);
+    }
+
+    public getBasicHandler(username: string, password: string): IRequestHandler {
+        return vsts.getBasicHandler(username, password);
+    }
+
+    public getHandlerFromToken(token: string): IRequestHandler {
+        return vsts.getHandlerFromToken(token);
+    }
+
+    private verifyConnection(): void {
+        if (this.connection === null) {
+            throw new Error("Initialize must be called before api's can be fetched!");
+        }
+    }
+}
+
 /* Tfs Rest Service Implementation */
 export class TfsRestService implements ITfsRestService {
     vstsBuildApi: buildApi.IBuildApi = null;
     vstsTestApi: testApi.ITestApi = null;
     taskAgentApi: taskAgentApi.ITaskAgentApi = null;
     teamProjectId: string = "";
-    createWebApi:
-        (server: string, authHandler: baseInterfaces.IRequestHandler, options: baseInterfaces.IRequestOptions) => vsts.WebApi = undefined;
+    azureDevOpsWebApi: IAzureDevOpsWebApi = null;
 
-    constructor(
-        createWebApi?:
-            (server: string, authHandler: baseInterfaces.IRequestHandler, options: baseInterfaces.IRequestOptions) => vsts.WebApi) {
-        if (createWebApi === undefined) {
-            createWebApi = (server, authHandler, options) => new vsts.WebApi(server, authHandler, options);
+    constructor(azureDevOpsWebApi?: IAzureDevOpsWebApi) {
+
+        if (azureDevOpsWebApi === undefined) {
+            azureDevOpsWebApi = new AzureDevOpsWebApi();
         }
 
-        this.createWebApi = createWebApi;
+        this.azureDevOpsWebApi = azureDevOpsWebApi;
     }
 
     public async initialize(
@@ -92,15 +154,15 @@ export class TfsRestService implements ITfsRestService {
         switch (authenticationMethod) {
             case AuthenticationMethodOAuthToken:
                 console.log("Using OAuth Access Token");
-                authHandler = vsts.getBearerHandler(password);
+                authHandler = this.azureDevOpsWebApi.getBearerHandler(password);
                 break;
             case AuthenticationMethodBasicAuthentication:
                 console.log("Using Basic Authentication");
-                authHandler = vsts.getBasicHandler(username, password);
+                authHandler = this.azureDevOpsWebApi.getBasicHandler(username, password);
                 break;
             case AuthenticationMethodPersonalAccessToken:
                 console.log("Using Personal Access Token");
-                authHandler = vsts.getHandlerFromToken(password);
+                authHandler = this.azureDevOpsWebApi.getHandlerFromToken(password);
                 break;
             default:
                 throw new Error("Cannot handle authentication method " + authenticationMethod);
@@ -110,12 +172,12 @@ export class TfsRestService implements ITfsRestService {
             ignoreSslError: ignoreSslError
         };
 
-        let connection: vsts.WebApi = this.createWebApi(tfsServer, authHandler, requestOptions);
-        this.vstsBuildApi = await connection.getBuildApi();
-        this.vstsTestApi = await connection.getTestApi();
-        this.taskAgentApi = await connection.getTaskAgentApi();
+        this.azureDevOpsWebApi.initializeConnection(tfsServer, authHandler, requestOptions);
+        this.vstsBuildApi = await this.azureDevOpsWebApi.getBuildApi();
+        this.vstsTestApi = await this.azureDevOpsWebApi.getTestApi();
+        this.taskAgentApi = await this.azureDevOpsWebApi.getTaskAgentApi();
 
-        await this.setTeamProjectId(connection, teamProject);
+        await this.setTeamProjectId(this.azureDevOpsWebApi, teamProject);
     }
 
     public async getBuildsByStatus(buildDefinitionName: string, statusFilter?: buildInterfaces.BuildStatus):
@@ -221,11 +283,12 @@ export class TfsRestService implements ITfsRestService {
             downloadDirectory += "\\";
         }
 
-
-        var result: buildInterfaces.BuildArtifact[] = await this.makeRequest(() => this.vstsBuildApi.getArtifacts(buildId, this.teamProjectId));
+        var result: buildInterfaces.BuildArtifact[] =
+            await this.makeRequest(() => this.vstsBuildApi.getArtifacts(buildId, this.teamProjectId));
 
         if (result.length === 0) {
             console.log(`No artifacts found for build ${buildId} - skipping...`);
+            return;
         }
 
         console.log(`Found ${result.length} artifact(s)`);
@@ -280,7 +343,8 @@ export class TfsRestService implements ITfsRestService {
     }
 
     public async getQueueIdByName(buildQueue: string): Promise<number> {
-        var agentQueues: taskAgentInterface.TaskAgentQueue[] = await this.makeRequest(() => this.taskAgentApi.getAgentQueues(this.teamProjectId, buildQueue));
+        var agentQueues: taskAgentInterface.TaskAgentQueue[] =
+            await this.makeRequest(() => this.taskAgentApi.getAgentQueues(this.teamProjectId, buildQueue));
 
         if (agentQueues.length === 1) {
             var agentQueue: taskAgentInterface.TaskAgentQueue = agentQueues[0];
@@ -388,7 +452,7 @@ export class TfsRestService implements ITfsRestService {
         return `\\\"${doubleEscapedValue}\\\"`;
     }
 
-    private async setTeamProjectId(connection: vsts.WebApi, teamProject: string): Promise<void> {
+    private async setTeamProjectId(connection: IAzureDevOpsWebApi, teamProject: string): Promise<void> {
         try {
             var guidCheckRegex: RegExp = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
             if (guidCheckRegex.test(teamProject)) {
@@ -408,12 +472,12 @@ export class TfsRestService implements ITfsRestService {
                     break;
                 }
             }
-
-            if (this.teamProjectId === "") {
-                throw new Error(`Could not find any Team Project with name ${teamProject}`);
-            }
         } catch (err) {
             throw new Error("Could not access projects - you're version of TFS might be too old, please check online for help.");
+        }
+
+        if (this.teamProjectId === "") {
+            throw new Error(`Could not find any Team Project with name ${teamProject}`);
         }
     }
 

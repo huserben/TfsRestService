@@ -1,15 +1,18 @@
-import * as vsts from "azure-devops-node-api";
 import * as buildApi from "azure-devops-node-api/BuildApi";
 import * as buildInterfaces from "azure-devops-node-api/interfaces/BuildInterfaces";
 import * as testInterfaces from "azure-devops-node-api/interfaces/TestInterfaces";
 import * as testApi from "azure-devops-node-api/TestApi";
 import * as taskAgentApi from "azure-devops-node-api/TaskAgentApi";
+import * as coreApi from "azure-devops-node-api/CoreApi";
 import * as baseInterfaces from "azure-devops-node-api/interfaces/common/VsoBaseInterfaces";
+import { IRequestHandler } from "typed-rest-client/Interfaces";
 export declare const TeamFoundationCollectionUri: string;
 export declare const TeamProject: string;
 export declare const TeamProjectId: string;
 export declare const RequestedForUsername: string;
 export declare const RequestedForUserId: string;
+export declare const ReleaseRequestedForUsername: string;
+export declare const ReleaseRequestedForId: string;
 export declare const SourceVersion: string;
 export declare const SourceBranch: string;
 export declare const CurrentBuildDefinition: string;
@@ -34,13 +37,23 @@ export interface ITfsRestService {
     getAssociatedChanges(build: buildInterfaces.Build): Promise<buildInterfaces.Change[]>;
     cancelBuild(buildId: number): Promise<void>;
 }
+export interface IAzureDevOpsWebApi {
+    getBearerHandler(bearerToken: string): IRequestHandler;
+    getBasicHandler(username: string, password: string): IRequestHandler;
+    getHandlerFromToken(token: string): IRequestHandler;
+    initializeConnection(tfsServer: string, authHandler: IRequestHandler, requestOptions: baseInterfaces.IRequestOptions): void;
+    getBuildApi(): Promise<buildApi.IBuildApi>;
+    getTestApi(): Promise<testApi.ITestApi>;
+    getTaskAgentApi(): Promise<taskAgentApi.ITaskAgentApi>;
+    getCoreApi(): Promise<coreApi.ICoreApi>;
+}
 export declare class TfsRestService implements ITfsRestService {
     vstsBuildApi: buildApi.IBuildApi;
     vstsTestApi: testApi.ITestApi;
     taskAgentApi: taskAgentApi.ITaskAgentApi;
     teamProjectId: string;
-    createWebApi: (server: string, authHandler: baseInterfaces.IRequestHandler, options: baseInterfaces.IRequestOptions) => vsts.WebApi;
-    constructor(createWebApi?: (server: string, authHandler: baseInterfaces.IRequestHandler, options: baseInterfaces.IRequestOptions) => vsts.WebApi);
+    azureDevOpsWebApi: IAzureDevOpsWebApi;
+    constructor(azureDevOpsWebApi?: IAzureDevOpsWebApi);
     initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, teamProject: string, ignoreSslError: boolean): Promise<void>;
     getBuildsByStatus(buildDefinitionName: string, statusFilter?: buildInterfaces.BuildStatus): Promise<buildInterfaces.Build[]>;
     triggerBuild(buildDefinitionName: string, branch: string, requestedForUserID: string, sourceVersion: string, demands: string[], queueId: number, buildParameters: string): Promise<buildInterfaces.Build>;

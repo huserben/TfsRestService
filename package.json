@@ -20,22 +20,23 @@
   "homepage": "https://github.com/huserben/TfsRestService#readme",
   "dependencies": {
     "@types/vso-node-api": "^4.0.0",
-    "azure-devops-node-api": "^6.6.2",
+    "azure-devops-node-api": "^6.6.3",
     "linqts": "1.10.0",
-    "typed-rest-client": "^1.0.9"
+    "natives": "^1.1.6",
+    "typed-rest-client": "^1.0.11"
   },
   "devDependencies": {
     "@types/mocha": "^2.2.44",
-    "@types/node": "^8.0.47",
+    "@types/node": "^8.10.39",
     "@types/sinon": "^2.3.7",
     "gulp": "^3.9.1",
     "gulp-cli": "^1.4.0",
     "gulp-mocha": "^4.3.1",
     "gulp-typescript": "^3.2.4",
     "mocha": "^4.0.1",
-    "sinon": "^4.4.2",
+    "sinon": "^4.5.0",
     "ts-sinon": "^1.0.12",
     "typemoq": "^2.1.0",
-    "typescript": "^2.7.2"
+    "typescript": "^2.9.2"
   }
 }
