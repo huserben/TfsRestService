@@ -12,6 +12,7 @@ import * as coreInterfaces from "azure-devops-node-api/interfaces/CoreInterfaces
 import * as taskAgentInterface from "azure-devops-node-api/interfaces/TaskAgentInterfaces";
 import * as baseInterfaces from "azure-devops-node-api/interfaces/common/VsoBaseInterfaces";
 import { IRequestHandler } from "typed-rest-client/Interfaces";
+import Stack from "ts-data.stack";
 
 export const TeamFoundationCollectionUri: string = "SYSTEM_TEAMFOUNDATIONCOLLECTIONURI";
 export const TeamProject: string = "SYSTEM_TEAMPROJECT";
@@ -416,11 +417,30 @@ export class TfsRestService implements ITfsRestService {
             var key: string = this.cleanValue(splittedKvp[0]);
             var value: string = this.cleanValue(splittedKvp[1]);
             var checkNextValues: boolean = true;
+
+            var openingCurlyBracesStack: Stack<string> = new Stack<string>();
+
+            if (value.startsWith("{")) {
+                console.log(`Identified value as Json Object - will use as is`);
+                this.updateCurlyBracesStack(openingCurlyBracesStack, value);
+            }
+
             while (index < keyValuePairs.length - 1 && checkNextValues) {
                 var nextKvp: string = keyValuePairs[index + 1];
-                if (nextKvp.indexOf(":") === -1) {
+                var nextValue: string = `${this.cleanValue(nextKvp)}`;
+
+                if (!openingCurlyBracesStack.isEmpty()) {
+                    value += `, ${nextValue}`;
+                    index++;
+
+                    this.updateCurlyBracesStack(openingCurlyBracesStack, nextValue);
+
+                    if (openingCurlyBracesStack.isEmpty()) {
+                        checkNextValues = false;
+                    }
+                } else if (nextKvp.indexOf(":") === -1) {
                     // next Value is part of the value and was just separated by comma
-                    value += `, ${this.cleanValue(nextKvp)}`;
+                    value += `, ${nextValue}`;
                     index++;
                 } else {
                     checkNextValues = false;
@@ -433,6 +453,18 @@ export class TfsRestService implements ITfsRestService {
         return JSON.stringify(buildParametersAsDictionary);
     }
 
+    private updateCurlyBracesStack(openingCurlyBracesStack: Stack<string>, value: string): void {
+        var openingCurlyBracesInValue: number = (value.match(/{/g) || []).length;
+        for (var index: number = 0; index < openingCurlyBracesInValue; index++) {
+            openingCurlyBracesStack.push("{");
+        }
+
+        var closingCurlyBracesInValue: number = (value.match(/}/g) || []).length;
+        for (var index: number = 0; index < closingCurlyBracesInValue; index++) {
+            openingCurlyBracesStack.pop();
+        }
+    }
+
     private cleanValue(value: string): string {
         value = value.trim();
 
@@ -441,15 +473,6 @@ export class TfsRestService implements ITfsRestService {
         }
 
         return value;
-    }
-
-    // the parameters have to be escaped specially because they need some special syntax that is (partly) double escaped
-    escapeParametersForRequestBody(value: string): string {
-        var escapedValue: string = JSON.stringify(value);
-        escapedValue = escapedValue.substr(1, escapedValue.length - 2);
-        var doubleEscapedValue: string = JSON.stringify(escapedValue);
-        doubleEscapedValue = doubleEscapedValue.substr(1, doubleEscapedValue.length - 2);
-        return `\\\"${doubleEscapedValue}\\\"`;
     }
 
     private async setTeamProjectId(connection: IAzureDevOpsWebApi, teamProject: string): Promise<void> {

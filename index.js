@@ -14,6 +14,7 @@ const linqts_1 = require("linqts");
 const vsts = require("azure-devops-node-api");
 const buildInterfaces = require("azure-devops-node-api/interfaces/BuildInterfaces");
 const testInterfaces = require("azure-devops-node-api/interfaces/TestInterfaces");
+const ts_data_stack_1 = require("ts-data.stack");
 exports.TeamFoundationCollectionUri = "SYSTEM_TEAMFOUNDATIONCOLLECTIONURI";
 exports.TeamProject = "SYSTEM_TEAMPROJECT";
 exports.TeamProjectId = "SYSTEM_TEAMPROJECTID";
@@ -307,10 +308,24 @@ class TfsRestService {
             var key = this.cleanValue(splittedKvp[0]);
             var value = this.cleanValue(splittedKvp[1]);
             var checkNextValues = true;
+            var openingCurlyBracesStack = new ts_data_stack_1.default();
+            if (value.startsWith("{")) {
+                console.log(`Identified value as Json Object - will use as is`);
+                this.updateCurlyBracesStack(openingCurlyBracesStack, value);
+            }
             while (index < keyValuePairs.length - 1 && checkNextValues) {
                 var nextKvp = keyValuePairs[index + 1];
-                if (nextKvp.indexOf(":") === -1) {
-                    value += `, ${this.cleanValue(nextKvp)}`;
+                var nextValue = `${this.cleanValue(nextKvp)}`;
+                if (!openingCurlyBracesStack.isEmpty()) {
+                    value += `, ${nextValue}`;
+                    index++;
+                    this.updateCurlyBracesStack(openingCurlyBracesStack, nextValue);
+                    if (openingCurlyBracesStack.isEmpty()) {
+                        checkNextValues = false;
+                    }
+                }
+                else if (nextKvp.indexOf(":") === -1) {
+                    value += `, ${nextValue}`;
                     index++;
                 }
                 else {
@@ -322,19 +337,22 @@ class TfsRestService {
         }
         return JSON.stringify(buildParametersAsDictionary);
     }
+    updateCurlyBracesStack(openingCurlyBracesStack, value) {
+        var openingCurlyBracesInValue = (value.match(/{/g) || []).length;
+        for (var index = 0; index < openingCurlyBracesInValue; index++) {
+            openingCurlyBracesStack.push("{");
+        }
+        var closingCurlyBracesInValue = (value.match(/}/g) || []).length;
+        for (var index = 0; index < closingCurlyBracesInValue; index++) {
+            openingCurlyBracesStack.pop();
+        }
+    }
     cleanValue(value) {
         value = value.trim();
         if (value.startsWith("\\\"") && value.endsWith("\\\"")) {
             value = value.substr(2, value.length - 4);
         }
         return value;
-    }
-    escapeParametersForRequestBody(value) {
-        var escapedValue = JSON.stringify(value);
-        escapedValue = escapedValue.substr(1, escapedValue.length - 2);
-        var doubleEscapedValue = JSON.stringify(escapedValue);
-        doubleEscapedValue = doubleEscapedValue.substr(1, doubleEscapedValue.length - 2);
-        return `\\\"${doubleEscapedValue}\\\"`;
     }
     setTeamProjectId(connection, teamProject) {
         return __awaiter(this, void 0, void 0, function* () {

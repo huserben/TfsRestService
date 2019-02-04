@@ -23,6 +23,7 @@
     "azure-devops-node-api": "^6.6.3",
     "linqts": "1.10.0",
     "natives": "^1.1.6",
+    "ts-data.stack": "^1.0.6",
     "typed-rest-client": "^1.0.11"
   },
   "devDependencies": {

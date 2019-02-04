@@ -144,12 +144,18 @@ describe("TFS Rest Service Tests", () => {
         yield subject.triggerBuild(BuildDefinitionName, null, "", "", expectedDemands, null, undefined);
         buildApiMock.verify(x => x.queueBuild(expectedBuildToTrigger, TeamProjectId, true), TypeMoq.Times.once());
     }));
-    [["VariableKey: Value", `{"VariableKey":"Value"}`],
+    [[`\\\"VariableKey\\\": \\\"Value\\\"`, `{"VariableKey":"Value"}`],
+        ["VariableKey: Value", `{"VariableKey":"Value"}`],
         ["VariableKey1: Value1, VariableKey2: Value2", `{"VariableKey1":"Value1","VariableKey2":"Value2"}`],
         ["VariableKey1: Value1, Value2, VariableKey2: Value3", `{"VariableKey1":"Value1, Value2","VariableKey2":"Value3"}`],
         ["VariableKey: C:\Test\Something", `{"VariableKey":"C:\Test\Something"}`],
         ["VariableKey: C:\Test\Something, otherValue, VariableKey2: MyValue",
-            `{"VariableKey":"C:\Test\Something, otherValue","VariableKey2":"MyValue"}`]]
+            `{"VariableKey":"C:\Test\Something, otherValue","VariableKey2":"MyValue"}`],
+        [`TrafficManagerEndpoints: { "a": 50, "b": 50 }`, `{"TrafficManagerEndpoints":"{ \\"a\\": 50, \\"b\\": 50 }"}`],
+        [`TrafficManagerEndpoints: { "a": 50, "b": 50 }, Key2: MyValue`,
+            `{"TrafficManagerEndpoints":"{ \\"a\\": 50, \\"b\\": 50 }","Key2":"MyValue"}`],
+        [`ComplexJsonObject: { "MyValue": 17, "SubObject": { "Simple": "Hello", "OtherObject": { "Simple": 12}}}`,
+            `{"ComplexJsonObject":"{ \\"MyValue\\": 17, \\"SubObject\\": { \\"Simple\\": \\"Hello\\", \\"OtherObject\\": { \\"Simple\\": 12}}}"}`]]
         .forEach(function (input) {
         it("queues new build with specified parameters", () => __awaiter(this, void 0, void 0, function* () {
             const BuildDefinitionName = "MyBuildDefinition";
