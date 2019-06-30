@@ -15,6 +15,7 @@ const vsts = require("azure-devops-node-api");
 const buildInterfaces = require("azure-devops-node-api/interfaces/BuildInterfaces");
 const testInterfaces = require("azure-devops-node-api/interfaces/TestInterfaces");
 const ts_data_stack_1 = require("ts-data.stack");
+const common = require("./generalfunctions");
 exports.TeamFoundationCollectionUri = "SYSTEM_TEAMFOUNDATIONCOLLECTIONURI";
 exports.TeamProject = "SYSTEM_TEAMPROJECT";
 exports.TeamProjectId = "SYSTEM_TEAMPROJECTID";
@@ -84,6 +85,7 @@ class TfsRestService {
         this.taskAgentApi = null;
         this.teamProjectId = "";
         this.azureDevOpsWebApi = null;
+        this.genralFunctions = new common.GeneralFunctions();
         if (azureDevOpsWebApi === undefined) {
             azureDevOpsWebApi = new AzureDevOpsWebApi();
         }
@@ -407,6 +409,7 @@ class TfsRestService {
     makeRequest(requestFunction) {
         return __awaiter(this, void 0, void 0, function* () {
             var maxRequestTryCount = 5;
+            var maxWaitingTime = 64;
             for (var requestCount = 0; requestCount < maxRequestTryCount; requestCount++) {
                 try {
                     return yield requestFunction();
@@ -414,6 +417,12 @@ class TfsRestService {
                 catch (error) {
                     console.log(`Error during request (${requestCount + 1}/${maxRequestTryCount})`);
                     console.log(`Error message: ${error}`);
+                    var waitTimeInSeconds = Math.pow(2, requestCount);
+                    if (waitTimeInSeconds > maxWaitingTime) {
+                        waitTimeInSeconds = maxWaitingTime;
+                    }
+                    console.log(`Will wait ${waitTimeInSeconds} seconds before retrying request...`);
+                    yield this.genralFunctions.sleep(waitTimeInSeconds * 1000);
                 }
             }
             throw new Error(`Request failed after ${maxRequestTryCount} tries - see error messages in the log`);

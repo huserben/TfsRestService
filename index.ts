@@ -13,6 +13,7 @@ import * as taskAgentInterface from "azure-devops-node-api/interfaces/TaskAgentI
 import * as baseInterfaces from "azure-devops-node-api/interfaces/common/VsoBaseInterfaces";
 import { IRequestHandler } from "typed-rest-client/Interfaces";
 import Stack from "ts-data.stack";
+import common = require("./generalfunctions");
 
 export const TeamFoundationCollectionUri: string = "SYSTEM_TEAMFOUNDATIONCOLLECTIONURI";
 export const TeamProject: string = "SYSTEM_TEAMPROJECT";
@@ -131,6 +132,7 @@ export class TfsRestService implements ITfsRestService {
     taskAgentApi: taskAgentApi.ITaskAgentApi = null;
     teamProjectId: string = "";
     azureDevOpsWebApi: IAzureDevOpsWebApi = null;
+    genralFunctions: common.IGeneralFunctions = new common.GeneralFunctions();
 
     constructor(azureDevOpsWebApi?: IAzureDevOpsWebApi) {
 
@@ -529,12 +531,23 @@ export class TfsRestService implements ITfsRestService {
 
     private async makeRequest<T>(requestFunction: () => Promise<T>): Promise<T> {
         var maxRequestTryCount: number = 5;
+        var maxWaitingTime: number = 64;
+
         for (var requestCount: number = 0; requestCount < maxRequestTryCount; requestCount++) {
             try {
                 return await requestFunction();
             } catch (error) {
                 console.log(`Error during request (${requestCount + 1}/${maxRequestTryCount})`);
                 console.log(`Error message: ${error}`);
+
+                var waitTimeInSeconds: number = Math.pow(2, requestCount);
+
+                if (waitTimeInSeconds > maxWaitingTime) {
+                    waitTimeInSeconds = maxWaitingTime;
+                }
+
+                console.log(`Will wait ${waitTimeInSeconds} seconds before retrying request...`);
+                await this.genralFunctions.sleep(waitTimeInSeconds * 1000);
             }
         }
 
