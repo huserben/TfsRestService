@@ -6,6 +6,7 @@ import * as taskAgentApi from "azure-devops-node-api/TaskAgentApi";
 import * as coreApi from "azure-devops-node-api/CoreApi";
 import * as baseInterfaces from "azure-devops-node-api/interfaces/common/VsoBaseInterfaces";
 import { IRequestHandler } from "typed-rest-client/Interfaces";
+import common = require("./generalfunctions");
 export declare const TeamFoundationCollectionUri: string;
 export declare const TeamProject: string;
 export declare const TeamProjectId: string;
@@ -53,6 +54,7 @@ export declare class TfsRestService implements ITfsRestService {
     taskAgentApi: taskAgentApi.ITaskAgentApi;
     teamProjectId: string;
     azureDevOpsWebApi: IAzureDevOpsWebApi;
+    genralFunctions: common.IGeneralFunctions;
     constructor(azureDevOpsWebApi?: IAzureDevOpsWebApi);
     initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, teamProject: string, ignoreSslError: boolean): Promise<void>;
     getBuildsByStatus(buildDefinitionName: string, statusFilter?: buildInterfaces.BuildStatus): Promise<buildInterfaces.Build[]>;
