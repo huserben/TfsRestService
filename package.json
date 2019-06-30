@@ -24,11 +24,11 @@
     "linqts": "1.10.0",
     "natives": "^1.1.6",
     "ts-data.stack": "^1.0.6",
-    "typed-rest-client": "^1.0.11"
+    "typed-rest-client": "^1.5.0"
   },
   "devDependencies": {
     "@types/mocha": "^2.2.44",
-    "@types/node": "^8.10.39",
+    "@types/node": "^8.10.49",
     "@types/sinon": "^2.3.7",
     "gulp": "^4.0.2",
     "gulp-cli": "^2.2.0",
@@ -36,7 +36,7 @@
     "gulp-typescript": "^5.0.1",
     "mocha": "^4.0.1",
     "sinon": "^4.5.0",
-    "ts-sinon": "^1.0.12",
+    "ts-sinon": "^1.0.17",
     "typemoq": "^2.1.0",
     "typescript": "^2.9.2"
   }
