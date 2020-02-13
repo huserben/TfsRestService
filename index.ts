@@ -297,7 +297,7 @@ export class TfsRestService implements ITfsRestService {
         console.log(`Found ${result.length} artifact(s)`);
 
         for (let artifact of result) {
-            if (artifact.resource.type !== "Container") {
+            if (artifact.resource.type.toLowerCase() !== "container") {
                 console.log(`Cannot download artifact ${artifact.name}. Only Containers are supported (type is \"${artifact.resource.type}\)"`);
                 continue;
             }
