@@ -57,3 +57,8 @@ typings/
 # dotenv environment variables file
 .env
 
+/.vs/VSWorkspaceState.json
+/.vs/TfsRestService/v16/.suo
+/.vs/TfsRestService/config/applicationhost.config
+/.vs/tasks.vs.json
+/.vs/slnx.sqlite

@@ -406,6 +406,14 @@ export class TfsRestService implements ITfsRestService {
             return "";
         }
 
+        buildParameters = buildParameters.trim();
+
+        if (buildParameters.startsWith("{") && buildParameters.endsWith("}")){
+            console.log(`Specified Build Parameters are a json object - will be treated as is. Please make sure you handled any kind of escaping etc. yourself.`);
+            console.log(`Parameters: ${buildParameters}`);
+            return buildParameters;
+        }
+
         var keyValuePairs: string[] = buildParameters.split(",");
         for (var index: number = 0; index < keyValuePairs.length; index++) {
             var kvp: string = keyValuePairs[index];

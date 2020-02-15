@@ -208,8 +208,8 @@ class TfsRestService {
             }
             console.log(`Found ${result.length} artifact(s)`);
             for (let artifact of result) {
-                if (artifact.resource.type !== "Container") {
-                    console.log(`Cannot download artifact ${artifact.name}. Only Containers are supported (type is \"${artifact.resource.type}\)"`);
+                if (artifact.resource.type.toLowerCase() !== "container") {
+                    console.log(`Cannot download artifact ${artifact.name}. Only Containers are supported (type is \"${artifact.resource.type}"\)`);
                     continue;
                 }
                 console.log(`Downloading artifact ${artifact.name}...`);
@@ -296,6 +296,12 @@ class TfsRestService {
         var buildParametersAsDictionary = {};
         if (buildParameters === null || buildParameters === undefined) {
             return "";
+        }
+        buildParameters = buildParameters.trim();
+        if (buildParameters.startsWith("{") && buildParameters.endsWith("}")) {
+            console.log(`Specified Build Parameters are a json object - will be treated as is. Please make sure you handled any kind of escaping etc. yourself.`);
+            console.log(`Parameters: ${buildParameters}`);
+            return buildParameters;
         }
         var keyValuePairs = buildParameters.split(",");
         for (var index = 0; index < keyValuePairs.length; index++) {

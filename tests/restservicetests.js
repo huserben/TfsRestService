@@ -155,7 +155,8 @@ describe("TFS Rest Service Tests", () => {
         [`TrafficManagerEndpoints: { "a": 50, "b": 50 }, Key2: MyValue`,
             `{"TrafficManagerEndpoints":"{ \\"a\\": 50, \\"b\\": 50 }","Key2":"MyValue"}`],
         [`ComplexJsonObject: { "MyValue": 17, "SubObject": { "Simple": "Hello", "OtherObject": { "Simple": 12}}}`,
-            `{"ComplexJsonObject":"{ \\"MyValue\\": 17, \\"SubObject\\": { \\"Simple\\": \\"Hello\\", \\"OtherObject\\": { \\"Simple\\": 12}}}"}`]]
+            `{"ComplexJsonObject":"{ \\"MyValue\\": 17, \\"SubObject\\": { \\"Simple\\": \\"Hello\\", \\"OtherObject\\": { \\"Simple\\": 12}}}"}`],
+        [`{ "01VarName": "...", "02VarName": "..." }`, `{ "01VarName": "...", "02VarName": "..." }`]]
         .forEach(function (input) {
         it("queues new build with specified parameters", () => __awaiter(this, void 0, void 0, function* () {
             const BuildDefinitionName = "MyBuildDefinition";
