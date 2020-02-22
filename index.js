@@ -275,7 +275,13 @@ class TfsRestService {
         return __awaiter(this, void 0, void 0, function* () {
             var result = yield this.makeRequest(() => this.vstsBuildApi.getDefinitions(this.teamProjectId, buildDefinitionName));
             if (result.length === 0) {
-                throw new Error(`Did not find any build definition with this name: ${buildDefinitionName}`);
+                console.log(`No build definition with name ${buildDefinitionName} found...`);
+                var buildId = parseInt(buildDefinitionName);
+                if (isNaN(buildId)) {
+                    throw new Error(`Did not find any build definition with this name: ${buildDefinitionName}`);
+                }
+                console.log(`Specified build name is a number - will treat as build id...`);
+                return buildId;
             }
             return result[0].id;
         });

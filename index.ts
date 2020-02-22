@@ -380,7 +380,16 @@ export class TfsRestService implements ITfsRestService {
             () => this.vstsBuildApi.getDefinitions(this.teamProjectId, buildDefinitionName));
 
         if (result.length === 0) {
-            throw new Error(`Did not find any build definition with this name: ${buildDefinitionName}`);
+            console.log(`No build definition with name ${buildDefinitionName} found...`);
+
+            var buildId: number = parseInt(buildDefinitionName);
+
+            if (isNaN(buildId)) {
+                throw new Error(`Did not find any build definition with this name: ${buildDefinitionName}`);
+            }
+
+            console.log(`Specified build name is a number - will treat as build id...`);
+            return buildId;
         }
 
         return result[0].id;
@@ -408,7 +417,7 @@ export class TfsRestService implements ITfsRestService {
 
         buildParameters = buildParameters.trim();
 
-        if (buildParameters.startsWith("{") && buildParameters.endsWith("}")){
+        if (buildParameters.startsWith("{") && buildParameters.endsWith("}")) {
             console.log(`Specified Build Parameters are a json object - will be treated as is. Please make sure you handled any kind of escaping etc. yourself.`);
             console.log(`Parameters: ${buildParameters}`);
             return buildParameters;

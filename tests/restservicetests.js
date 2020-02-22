@@ -74,6 +74,18 @@ describe("TFS Rest Service Tests", () => {
         yield subject.triggerBuild(BuildDefinitionName, null, undefined, undefined, null, undefined, undefined);
         buildApiMock.verify(x => x.queueBuild(expectedBuildToTrigger, TeamProjectId, true), TypeMoq.Times.once());
     }));
+    it("queues new build for build definition with specified id", () => __awaiter(this, void 0, void 0, function* () {
+        const BuilDefinitionId = 12;
+        var expectedBuildToTrigger = {
+            definition: { id: BuilDefinitionId },
+            parameters: ""
+        };
+        buildApiMock.setup(x => x.getDefinitions(TeamProjectId, `${BuilDefinitionId}`))
+            .returns(() => __awaiter(this, void 0, void 0, function* () { return []; }));
+        yield subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
+        yield subject.triggerBuild(`${BuilDefinitionId}`, null, undefined, undefined, null, undefined, undefined);
+        buildApiMock.verify(x => x.queueBuild(expectedBuildToTrigger, TeamProjectId, true), TypeMoq.Times.once());
+    }));
     it("queues new build in specified branch", () => __awaiter(this, void 0, void 0, function* () {
         const BuildDefinitionName = "MyBuildDefinition";
         const BuilDefinitionId = 12;
