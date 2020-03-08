@@ -487,7 +487,7 @@ describe("TFS Rest Service Tests", () => {
         await subject.cancelBuild(BuildId);
 
         // assert
-        buildApiMock.verify(x => x.updateBuild(TypeMoq.It.isAny(), TeamProjectId, BuildId), TypeMoq.Times.never());
+        buildApiMock.verify(x => x.updateBuild(TypeMoq.It.isAny(), BuildId, TeamProjectId), TypeMoq.Times.never());
         assert(consoleLogSpy.calledWith(`Build ${BuildId} has already finished.`));
     });
 
@@ -505,7 +505,7 @@ describe("TFS Rest Service Tests", () => {
         await subject.cancelBuild(BuildId);
 
         // assert
-        buildApiMock.verify(x => x.updateBuild(expectedRequest, TeamProjectId, BuildId), TypeMoq.Times.once());
+        buildApiMock.verify(x => x.updateBuild(expectedRequest, BuildId, TeamProjectId), TypeMoq.Times.once());
     });
 
     it("returns true when we check if builds have finished and the status is completed", async () => {
@@ -993,7 +993,7 @@ describe("TFS Rest Service Tests", () => {
         const BuildId: number = 111;
         var downloadDirectory: string = `C:\\users\\someUser\\Downloads`;
 
-        buildApiMock.setup(x => x.getArtifacts(TeamProjectId, BuildId))
+        buildApiMock.setup(x => x.getArtifacts(BuildId, TeamProjectId))
             .returns(async () => []);
 
         fsStub.withArgs(downloadDirectory).returns(true);
@@ -1013,7 +1013,7 @@ describe("TFS Rest Service Tests", () => {
         const BuildId: number = 111;
         var downloadDirectory: string = `C:\\users\\someUser\\Downloads`;
 
-        buildApiMock.setup(x => x.getArtifacts(TeamProjectId, BuildId))
+        buildApiMock.setup(x => x.getArtifacts(BuildId, TeamProjectId))
             .returns(async () => []);
 
         fsStub.withArgs(downloadDirectory).returns(false);
@@ -1091,7 +1091,7 @@ describe("TFS Rest Service Tests", () => {
         buildMock.setup((x: any) => x.then).returns(() => undefined);
         buildMock.setup(x => x.id).returns(() => buildId);
 
-        buildApiMock.setup(x => x.getBuild(TeamProjectId, buildId)).returns(async () => buildMock.object);
+        buildApiMock.setup(x => x.getBuild(buildId, TeamProjectId)).returns(async () => buildMock.object);
 
         return buildMock;
     }
