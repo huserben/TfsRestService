@@ -271,7 +271,7 @@ export class TfsRestService implements ITfsRestService {
         var requestBody: any = { status: buildInterfaces.BuildStatus.Cancelling };
 
         await this.makeRequest(
-            () => this.vstsBuildApi.updateBuild(requestBody, buildId, this.teamProjectId));
+            () => this.vstsBuildApi.updateBuild(requestBody, this.teamProjectId, buildId));
     }
 
     public async downloadArtifacts(buildId: number, downloadDirectory: string): Promise<void> {
@@ -287,7 +287,7 @@ export class TfsRestService implements ITfsRestService {
         }
 
         var result: buildInterfaces.BuildArtifact[] =
-            await this.makeRequest(() => this.vstsBuildApi.getArtifacts(buildId, this.teamProjectId));
+            await this.makeRequest(() => this.vstsBuildApi.getArtifacts(this.teamProjectId, buildId));
 
         if (result.length === 0) {
             console.log(`No artifacts found for build ${buildId} - skipping...`);
@@ -321,7 +321,7 @@ export class TfsRestService implements ITfsRestService {
             }
 
             const artifactStream: NodeJS.ReadableStream = await this.vstsBuildApi.getArtifactContentZip(
-                buildId, artifact.name, this.teamProjectId);
+                this.teamProjectId, buildId, artifact.name);
             const fileStream: any = fs.createWriteStream(downloadDirectory + fileName);
             artifactStream.pipe(fileStream);
             fileStream.on("close", () => {
@@ -404,7 +404,7 @@ export class TfsRestService implements ITfsRestService {
     public async getBuildInfo(buildId: number): Promise<buildInterfaces.Build> {
 
         var build: buildInterfaces.Build = await this.makeRequest(
-            () => this.vstsBuildApi.getBuild(buildId, this.teamProjectId));
+            () => this.vstsBuildApi.getBuild(this.teamProjectId, buildId));
         return build;
     }
 
