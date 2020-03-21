@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as url from "url";
 import { List } from "linqts";
+import path = require('path');
 import * as vsts from "azure-devops-node-api";
 import * as buildApi from "azure-devops-node-api/BuildApi";
 import * as buildInterfaces from "azure-devops-node-api/interfaces/BuildInterfaces";
@@ -282,10 +283,6 @@ export class TfsRestService implements ITfsRestService {
             fs.mkdirSync(downloadDirectory);
         }
 
-        if (!downloadDirectory.endsWith("\\")) {
-            downloadDirectory += "\\";
-        }
-
         var result: buildInterfaces.BuildArtifact[] =
             await this.makeRequest(() => this.vstsBuildApi.getArtifacts(this.teamProjectId, buildId));
 
@@ -314,18 +311,21 @@ export class TfsRestService implements ITfsRestService {
             var fileName: string = `${artifact.name}.${fileFormat}`;
             var index: number = 1;
 
-            while (fs.existsSync(`${downloadDirectory}${fileName}`)) {
+            var filePath : string = path.join(downloadDirectory, fileName);
+
+            while (fs.existsSync(filePath)) {
                 console.log(`${fileName} already exists...`);
                 fileName = `${artifact.name}${index}.${fileFormat}`;
+                filePath = path.join(downloadDirectory, fileName);
                 index++;
             }
 
             const artifactStream: NodeJS.ReadableStream = await this.vstsBuildApi.getArtifactContentZip(
                 this.teamProjectId, buildId, artifact.name);
-            const fileStream: any = fs.createWriteStream(downloadDirectory + fileName);
+            const fileStream: any = fs.createWriteStream(filePath);
             artifactStream.pipe(fileStream);
             fileStream.on("close", () => {
-                console.log(`Stored artifact here: ${downloadDirectory}${fileName}`);
+                console.log(`Stored artifact here: ${filePath}`);
             });
         }
     }

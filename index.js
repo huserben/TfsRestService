@@ -1,9 +1,10 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -11,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const fs = require("fs");
 const url = require("url");
 const linqts_1 = require("linqts");
+const path = require("path");
 const vsts = require("azure-devops-node-api");
 const buildInterfaces = require("azure-devops-node-api/interfaces/BuildInterfaces");
 const testInterfaces = require("azure-devops-node-api/interfaces/TestInterfaces");
@@ -188,7 +190,7 @@ class TfsRestService {
                 return;
             }
             var requestBody = { status: buildInterfaces.BuildStatus.Cancelling };
-            yield this.makeRequest(() => this.vstsBuildApi.updateBuild(requestBody, buildId, this.teamProjectId));
+            yield this.makeRequest(() => this.vstsBuildApi.updateBuild(requestBody, this.teamProjectId, buildId));
         });
     }
     downloadArtifacts(buildId, downloadDirectory) {
@@ -198,10 +200,7 @@ class TfsRestService {
                 console.log(`Directory ${downloadDirectory} does not exist - will be created`);
                 fs.mkdirSync(downloadDirectory);
             }
-            if (!downloadDirectory.endsWith("\\")) {
-                downloadDirectory += "\\";
-            }
-            var result = yield this.makeRequest(() => this.vstsBuildApi.getArtifacts(buildId, this.teamProjectId));
+            var result = yield this.makeRequest(() => this.vstsBuildApi.getArtifacts(this.teamProjectId, buildId));
             if (result.length === 0) {
                 console.log(`No artifacts found for build ${buildId} - skipping...`);
                 return;
@@ -219,16 +218,18 @@ class TfsRestService {
                 }
                 var fileName = `${artifact.name}.${fileFormat}`;
                 var index = 1;
-                while (fs.existsSync(`${downloadDirectory}${fileName}`)) {
+                var filePath = path.join(downloadDirectory, fileName);
+                while (fs.existsSync(filePath)) {
                     console.log(`${fileName} already exists...`);
                     fileName = `${artifact.name}${index}.${fileFormat}`;
+                    filePath = path.join(downloadDirectory, fileName);
                     index++;
                 }
-                const artifactStream = yield this.vstsBuildApi.getArtifactContentZip(buildId, artifact.name, this.teamProjectId);
-                const fileStream = fs.createWriteStream(downloadDirectory + fileName);
+                const artifactStream = yield this.vstsBuildApi.getArtifactContentZip(this.teamProjectId, buildId, artifact.name);
+                const fileStream = fs.createWriteStream(filePath);
                 artifactStream.pipe(fileStream);
                 fileStream.on("close", () => {
-                    console.log(`Stored artifact here: ${downloadDirectory}${fileName}`);
+                    console.log(`Stored artifact here: ${filePath}`);
                 });
             }
         });
@@ -294,7 +295,7 @@ class TfsRestService {
     }
     getBuildInfo(buildId) {
         return __awaiter(this, void 0, void 0, function* () {
-            var build = yield this.makeRequest(() => this.vstsBuildApi.getBuild(buildId, this.teamProjectId));
+            var build = yield this.makeRequest(() => this.vstsBuildApi.getBuild(this.teamProjectId, buildId));
             return build;
         });
     }
@@ -442,3 +443,4 @@ class TfsRestService {
     }
 }
 exports.TfsRestService = TfsRestService;
+//# sourceMappingURL=index.js.map
