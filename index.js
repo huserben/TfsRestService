@@ -81,17 +81,21 @@ class AzureDevOpsWebApi {
     }
 }
 class TfsRestService {
-    constructor(azureDevOpsWebApi) {
+    constructor(azureDevOpsWebApi, generalFunctions) {
         this.vstsBuildApi = null;
         this.vstsTestApi = null;
         this.taskAgentApi = null;
         this.teamProjectId = "";
         this.azureDevOpsWebApi = null;
-        this.genralFunctions = new common.GeneralFunctions();
+        this.genralFunctions = null;
         if (azureDevOpsWebApi === undefined) {
             azureDevOpsWebApi = new AzureDevOpsWebApi();
         }
+        if (generalFunctions === undefined) {
+            generalFunctions = new common.GeneralFunctions();
+        }
         this.azureDevOpsWebApi = azureDevOpsWebApi;
+        this.genralFunctions = generalFunctions;
     }
     initialize(authenticationMethod, username, password, tfsServer, teamProject, ignoreSslError) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -419,12 +423,14 @@ class TfsRestService {
                 catch (error) {
                     console.log(`Error during request (${requestCount + 1}/${maxRequestTryCount})`);
                     console.log(`Error message: ${error}`);
-                    var waitTimeInSeconds = Math.pow(2, requestCount);
-                    if (waitTimeInSeconds > maxWaitingTime) {
-                        waitTimeInSeconds = maxWaitingTime;
+                    if (requestCount < maxRequestTryCount - 1) {
+                        var waitTimeInSeconds = Math.pow(2, requestCount);
+                        if (waitTimeInSeconds > maxWaitingTime) {
+                            waitTimeInSeconds = maxWaitingTime;
+                        }
+                        console.log(`Will wait ${waitTimeInSeconds} seconds before retrying request...`);
+                        yield this.genralFunctions.sleep(waitTimeInSeconds * 1000);
                     }
-                    console.log(`Will wait ${waitTimeInSeconds} seconds before retrying request...`);
-                    yield this.genralFunctions.sleep(waitTimeInSeconds * 1000);
                 }
             }
             throw new Error(`Request failed after ${maxRequestTryCount} tries - see error messages in the log`);

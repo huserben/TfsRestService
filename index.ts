@@ -132,15 +132,20 @@ export class TfsRestService implements ITfsRestService {
     taskAgentApi: taskAgentApi.ITaskAgentApi = null;
     teamProjectId: string = "";
     azureDevOpsWebApi: IAzureDevOpsWebApi = null;
-    genralFunctions: common.IGeneralFunctions = new common.GeneralFunctions();
+    genralFunctions: common.IGeneralFunctions = null;
 
-    constructor(azureDevOpsWebApi?: IAzureDevOpsWebApi) {
+    constructor(azureDevOpsWebApi?: IAzureDevOpsWebApi, generalFunctions?: common.IGeneralFunctions) {
 
         if (azureDevOpsWebApi === undefined) {
             azureDevOpsWebApi = new AzureDevOpsWebApi();
         }
 
+        if (generalFunctions === undefined) {
+            generalFunctions = new common.GeneralFunctions();
+        }
+
         this.azureDevOpsWebApi = azureDevOpsWebApi;
+        this.genralFunctions = generalFunctions;
     }
 
     public async initialize(
@@ -540,14 +545,16 @@ export class TfsRestService implements ITfsRestService {
                 console.log(`Error during request (${requestCount + 1}/${maxRequestTryCount})`);
                 console.log(`Error message: ${error}`);
 
-                var waitTimeInSeconds: number = Math.pow(2, requestCount);
+                if (requestCount < maxRequestTryCount - 1) {
+                    var waitTimeInSeconds: number = Math.pow(2, requestCount);
 
-                if (waitTimeInSeconds > maxWaitingTime) {
-                    waitTimeInSeconds = maxWaitingTime;
+                    if (waitTimeInSeconds > maxWaitingTime) {
+                        waitTimeInSeconds = maxWaitingTime;
+                    }
+
+                    console.log(`Will wait ${waitTimeInSeconds} seconds before retrying request...`);
+                    await this.genralFunctions.sleep(waitTimeInSeconds * 1000);
                 }
-
-                console.log(`Will wait ${waitTimeInSeconds} seconds before retrying request...`);
-                await this.genralFunctions.sleep(waitTimeInSeconds * 1000);
             }
         }
 

@@ -28,9 +28,11 @@ describe("TFS Rest Service Tests", () => {
     let taskAgentApiMock;
     let coreApiMock;
     let azureDevOpsWebApiMock;
+    let generalFunctionsMock;
     let requestHandlerMock;
     beforeEach(() => {
         azureDevOpsWebApiMock = TypeMoq.Mock.ofType();
+        generalFunctionsMock = TypeMoq.Mock.ofType();
         requestHandlerMock = TypeMoq.Mock.ofType();
         azureDevOpsWebApiMock.setup(x => x.getBasicHandler(TypeMoq.It.isAnyString(), TypeMoq.It.isAnyString()))
             .returns(() => requestHandlerMock.object);
@@ -55,9 +57,10 @@ describe("TFS Rest Service Tests", () => {
         azureDevOpsWebApiMock.setup(x => x.getTestApi()).returns(() => __awaiter(void 0, void 0, void 0, function* () { return testApiMock.object; }));
         azureDevOpsWebApiMock.setup(x => x.getTaskAgentApi()).returns(() => __awaiter(void 0, void 0, void 0, function* () { return taskAgentApiMock.object; }));
         azureDevOpsWebApiMock.setup(x => x.getCoreApi()).returns(() => __awaiter(void 0, void 0, void 0, function* () { return coreApiMock.object; }));
+        generalFunctionsMock.setup(x => x.sleep(TypeMoq.It.isAnyNumber()));
         consoleLogSpy = sinon.spy(console, "log");
         fsStub = sinon.stub(fs, "existsSync");
-        subject = new index.TfsRestService(azureDevOpsWebApiMock.object);
+        subject = new index.TfsRestService(azureDevOpsWebApiMock.object, generalFunctionsMock.object);
     });
     afterEach(() => __awaiter(void 0, void 0, void 0, function* () {
         consoleLogSpy.restore();
@@ -102,6 +105,30 @@ describe("TFS Rest Service Tests", () => {
         yield subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
         yield subject.triggerBuild(BuildDefinitionName, null, RequestedUserId, undefined, null, undefined, undefined);
         buildApiMock.verify(x => x.queueBuild(expectedBuildToTrigger, TeamProjectId, true), TypeMoq.Times.once());
+    }));
+    it("retries 5 times if request fails", () => __awaiter(void 0, void 0, void 0, function* () {
+        const BuildDefinitionName = "MyBuildDefinition";
+        const BuilDefinitionId = 12;
+        const RequestedUserId = "37";
+        var expectedBuildToTrigger = {
+            definition: { id: BuilDefinitionId },
+            parameters: "",
+            requestedFor: { id: RequestedUserId }
+        };
+        setupBuildIdForBuildDefinition(BuildDefinitionName, BuilDefinitionId);
+        yield subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
+        buildApiMock.setup(x => x.queueBuild(expectedBuildToTrigger, TeamProjectId, true)).throws(new Error("Something wen't wrong"));
+        var requestFailed = false;
+        try {
+            yield subject.triggerBuild(BuildDefinitionName, null, RequestedUserId, undefined, null, undefined, undefined);
+        }
+        catch (_a) {
+            requestFailed = true;
+        }
+        assert.equal(true, requestFailed);
+        var retryCount = 5;
+        buildApiMock.verify(x => x.queueBuild(expectedBuildToTrigger, TeamProjectId, true), TypeMoq.Times.exactly(retryCount));
+        generalFunctionsMock.verify(x => x.sleep(TypeMoq.It.isAnyNumber()), TypeMoq.Times.exactly(retryCount - 1));
     }));
     it("queues new build with specified source version", () => __awaiter(void 0, void 0, void 0, function* () {
         const BuildDefinitionName = "MyBuildDefinition";
@@ -656,15 +683,6 @@ describe("TFS Rest Service Tests", () => {
         buildRefMock.setup(x => x.id).returns(() => id);
         buildApiMock.setup(x => x.getDefinitions(TeamProjectId, name))
             .returns(() => __awaiter(this, void 0, void 0, function* () { return [buildRefMock.object]; }));
-    }
-    function setupBuildArtifactMock({ name, type = "Container", fileFormat = "zip" }) {
-        var buildArtifactMock = TypeMoq.Mock.ofType();
-        var artifactResourceMock = TypeMoq.Mock.ofType();
-        artifactResourceMock.setup(x => x.type).returns(() => type);
-        artifactResourceMock.setup(x => x.downloadUrl).returns(() => `https:://www.some.thing/MyFile.${fileFormat}`);
-        buildArtifactMock.setup(x => x.name).returns(() => name);
-        buildArtifactMock.setup(x => x.resource).returns(() => artifactResourceMock.object);
-        return buildArtifactMock;
     }
     function setupTestRunMock(testRunState, testRunName) {
         var testRunMock = TypeMoq.Mock.ofType();
