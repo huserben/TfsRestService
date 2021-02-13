@@ -69,10 +69,10 @@ export declare class TfsRestService implements ITfsRestService {
     getBuildDefinitionId(buildDefinitionName: string): Promise<number>;
     getAssociatedChanges(build: buildInterfaces.Build): Promise<buildInterfaces.Change[]>;
     getBuildInfo(buildId: number): Promise<buildInterfaces.Build>;
-    private buildParameterString(buildParameters);
-    private updateCurlyBracesStack(openingCurlyBracesStack, value);
-    private cleanValue(value);
-    private setTeamProjectId(connection, teamProject);
-    private verifyAuthenticationMethod(authenticationMethod, username, password);
-    private makeRequest<T>(requestFunction);
+    private buildParameterString;
+    private updateCurlyBracesStack;
+    private cleanValue;
+    private setTeamProjectId;
+    private verifyAuthenticationMethod;
+    private makeRequest;
 }

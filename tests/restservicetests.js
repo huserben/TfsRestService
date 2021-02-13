@@ -1,9 +1,10 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -49,20 +50,20 @@ describe("TFS Rest Service Tests", () => {
         teamProjectMock.setup(prj => prj.name).returns(() => TeamProjectName);
         teamProjectMock.setup(prj => prj.id).returns(() => TeamProjectId);
         coreApiMock.setup(api => api.getProjects(TypeMoq.It.isAny(), TypeMoq.It.isAny(), TypeMoq.It.isAny(), TypeMoq.It.isAny()))
-            .returns(() => __awaiter(this, void 0, void 0, function* () { return [teamProjectMock.object]; }));
-        azureDevOpsWebApiMock.setup(x => x.getBuildApi()).returns(() => __awaiter(this, void 0, void 0, function* () { return buildApiMock.object; }));
-        azureDevOpsWebApiMock.setup(x => x.getTestApi()).returns(() => __awaiter(this, void 0, void 0, function* () { return testApiMock.object; }));
-        azureDevOpsWebApiMock.setup(x => x.getTaskAgentApi()).returns(() => __awaiter(this, void 0, void 0, function* () { return taskAgentApiMock.object; }));
-        azureDevOpsWebApiMock.setup(x => x.getCoreApi()).returns(() => __awaiter(this, void 0, void 0, function* () { return coreApiMock.object; }));
+            .returns(() => __awaiter(void 0, void 0, void 0, function* () { return [teamProjectMock.object]; }));
+        azureDevOpsWebApiMock.setup(x => x.getBuildApi()).returns(() => __awaiter(void 0, void 0, void 0, function* () { return buildApiMock.object; }));
+        azureDevOpsWebApiMock.setup(x => x.getTestApi()).returns(() => __awaiter(void 0, void 0, void 0, function* () { return testApiMock.object; }));
+        azureDevOpsWebApiMock.setup(x => x.getTaskAgentApi()).returns(() => __awaiter(void 0, void 0, void 0, function* () { return taskAgentApiMock.object; }));
+        azureDevOpsWebApiMock.setup(x => x.getCoreApi()).returns(() => __awaiter(void 0, void 0, void 0, function* () { return coreApiMock.object; }));
         consoleLogSpy = sinon.spy(console, "log");
         fsStub = sinon.stub(fs, "existsSync");
         subject = new index.TfsRestService(azureDevOpsWebApiMock.object);
     });
-    afterEach(() => __awaiter(this, void 0, void 0, function* () {
+    afterEach(() => __awaiter(void 0, void 0, void 0, function* () {
         consoleLogSpy.restore();
         fsStub.restore();
     }));
-    it("queues new build for specified build definition", () => __awaiter(this, void 0, void 0, function* () {
+    it("queues new build for specified build definition", () => __awaiter(void 0, void 0, void 0, function* () {
         const BuildDefinitionName = "MyBuildDefinition";
         const BuilDefinitionId = 12;
         var expectedBuildToTrigger = {
@@ -74,7 +75,7 @@ describe("TFS Rest Service Tests", () => {
         yield subject.triggerBuild(BuildDefinitionName, null, undefined, undefined, null, undefined, undefined);
         buildApiMock.verify(x => x.queueBuild(expectedBuildToTrigger, TeamProjectId, true), TypeMoq.Times.once());
     }));
-    it("queues new build in specified branch", () => __awaiter(this, void 0, void 0, function* () {
+    it("queues new build in specified branch", () => __awaiter(void 0, void 0, void 0, function* () {
         const BuildDefinitionName = "MyBuildDefinition";
         const BuilDefinitionId = 12;
         const SourceBranch = "features/unittests";
@@ -88,7 +89,7 @@ describe("TFS Rest Service Tests", () => {
         yield subject.triggerBuild(BuildDefinitionName, SourceBranch, undefined, undefined, null, undefined, undefined);
         buildApiMock.verify(x => x.queueBuild(expectedBuildToTrigger, TeamProjectId, true), TypeMoq.Times.once());
     }));
-    it("queues new build for user that requested it", () => __awaiter(this, void 0, void 0, function* () {
+    it("queues new build for user that requested it", () => __awaiter(void 0, void 0, void 0, function* () {
         const BuildDefinitionName = "MyBuildDefinition";
         const BuilDefinitionId = 12;
         const RequestedUserId = "37";
@@ -102,7 +103,7 @@ describe("TFS Rest Service Tests", () => {
         yield subject.triggerBuild(BuildDefinitionName, null, RequestedUserId, undefined, null, undefined, undefined);
         buildApiMock.verify(x => x.queueBuild(expectedBuildToTrigger, TeamProjectId, true), TypeMoq.Times.once());
     }));
-    it("queues new build with specified source version", () => __awaiter(this, void 0, void 0, function* () {
+    it("queues new build with specified source version", () => __awaiter(void 0, void 0, void 0, function* () {
         const BuildDefinitionName = "MyBuildDefinition";
         const BuilDefinitionId = 12;
         const SourceVersion = "C17";
@@ -116,7 +117,7 @@ describe("TFS Rest Service Tests", () => {
         yield subject.triggerBuild(BuildDefinitionName, null, "", SourceVersion, null, undefined, undefined);
         buildApiMock.verify(x => x.queueBuild(expectedBuildToTrigger, TeamProjectId, true), TypeMoq.Times.once());
     }));
-    it("queues new build with specified Queue Id", () => __awaiter(this, void 0, void 0, function* () {
+    it("queues new build with specified Queue Id", () => __awaiter(void 0, void 0, void 0, function* () {
         const BuildDefinitionName = "MyBuildDefinition";
         const BuilDefinitionId = 12;
         const QueueId = 1337;
@@ -130,7 +131,7 @@ describe("TFS Rest Service Tests", () => {
         yield subject.triggerBuild(BuildDefinitionName, null, "", "", null, QueueId, undefined);
         buildApiMock.verify(x => x.queueBuild(expectedBuildToTrigger, TeamProjectId, true), TypeMoq.Times.once());
     }));
-    it("queues new build with specified demands", () => __awaiter(this, void 0, void 0, function* () {
+    it("queues new build with specified demands", () => __awaiter(void 0, void 0, void 0, function* () {
         const BuildDefinitionName = "MyBuildDefinition";
         const BuilDefinitionId = 12;
         var expectedDemands = ["SomeDemand", "OtherDemand=12"];
@@ -231,28 +232,28 @@ describe("TFS Rest Service Tests", () => {
             });
         }));
     });
-    it("throws if unsupported Authentication method is selected", () => __awaiter(this, void 0, void 0, function* () {
+    it("throws if unsupported Authentication method is selected", () => __awaiter(void 0, void 0, void 0, function* () {
         var authenticationMethod = "Unsupported Authentication";
-        yield assert.rejects(() => __awaiter(this, void 0, void 0, function* () {
+        yield assert.rejects(() => __awaiter(void 0, void 0, void 0, function* () {
             return yield subject.initialize(authenticationMethod, "username", "password", ServerUrl, TeamProjectName, true);
         }), {
             message: `Cannot handle authentication method ${authenticationMethod}`
         });
     }));
-    it("useses bearer handler if OAuth Authentication is used", () => __awaiter(this, void 0, void 0, function* () {
+    it("useses bearer handler if OAuth Authentication is used", () => __awaiter(void 0, void 0, void 0, function* () {
         const ExpectedToken = "Mytoken";
         yield subject.initialize(index.AuthenticationMethodOAuthToken, "doesn't matter", ExpectedToken, ServerUrl, TeamProjectName, true);
         azureDevOpsWebApiMock.verify(x => x.getBearerHandler(ExpectedToken), TypeMoq.Times.once());
         azureDevOpsWebApiMock.verify(x => x.initializeConnection(ServerUrl, requestHandlerMock.object, TypeMoq.It.isAny()), TypeMoq.Times.once());
     }));
-    it("useses basic handler if Basic Authentication is used", () => __awaiter(this, void 0, void 0, function* () {
+    it("useses basic handler if Basic Authentication is used", () => __awaiter(void 0, void 0, void 0, function* () {
         const ExpectedPassword = "P@5sW0rd";
         const ExpectedUsername = "UserName";
         yield subject.initialize(index.AuthenticationMethodBasicAuthentication, ExpectedUsername, ExpectedPassword, ServerUrl, TeamProjectName, true);
         azureDevOpsWebApiMock.verify(x => x.getBasicHandler(ExpectedUsername, ExpectedPassword), TypeMoq.Times.once());
         azureDevOpsWebApiMock.verify(x => x.initializeConnection(ServerUrl, requestHandlerMock.object, TypeMoq.It.isAny()), TypeMoq.Times.once());
     }));
-    it("useses handler from Token if PAT Authentication is used", () => __awaiter(this, void 0, void 0, function* () {
+    it("useses handler from Token if PAT Authentication is used", () => __awaiter(void 0, void 0, void 0, function* () {
         const PersonalAccessToken = "12389udfsalkjdsaf0912o3iusdf";
         yield subject.initialize(index.AuthenticationMethodPersonalAccessToken, "no one cares", PersonalAccessToken, ServerUrl, TeamProjectName, true);
         azureDevOpsWebApiMock.verify(x => x.getHandlerFromToken(PersonalAccessToken), TypeMoq.Times.once());
@@ -264,36 +265,36 @@ describe("TFS Rest Service Tests", () => {
             azureDevOpsWebApiMock.verify(x => x.initializeConnection(ServerUrl, requestHandlerMock.object, { ignoreSslError: ignoreSslError }), TypeMoq.Times.once());
         }));
     });
-    it("uses team project id as is if it is a guid", () => __awaiter(this, void 0, void 0, function* () {
+    it("uses team project id as is if it is a guid", () => __awaiter(void 0, void 0, void 0, function* () {
         yield subject.initialize(index.AuthenticationMethodBasicAuthentication, "no one cares", "SomePassword", ServerUrl, TeamProjectId, true);
         assert(consoleLogSpy.calledWith(`Provided team project was guid.`));
         coreApiMock.verify(x => x.getProjects(), TypeMoq.Times.never());
     }));
-    it("fetches id from team projects via api if its not a guid", () => __awaiter(this, void 0, void 0, function* () {
+    it("fetches id from team projects via api if its not a guid", () => __awaiter(void 0, void 0, void 0, function* () {
         yield subject.initialize(index.AuthenticationMethodBasicAuthentication, "no one cares", "SomePassword", ServerUrl, TeamProjectName, true);
         assert(consoleLogSpy.calledWith(`Found id for team project ${TeamProjectName}: ${TeamProjectId}`));
     }));
-    it("throws error if no team with specified name was found", () => __awaiter(this, void 0, void 0, function* () {
+    it("throws error if no team with specified name was found", () => __awaiter(void 0, void 0, void 0, function* () {
         const TeamName = "Some not existing team";
-        yield assert.rejects(() => __awaiter(this, void 0, void 0, function* () {
+        yield assert.rejects(() => __awaiter(void 0, void 0, void 0, function* () {
             return yield subject.initialize(index.AuthenticationMethodBasicAuthentication, "user", "pw", ServerUrl, TeamName, true);
         }), {
             message: `Could not find any Team Project with name ${TeamName}`
         });
     }));
-    it("throws error if access to team project fails", () => __awaiter(this, void 0, void 0, function* () {
+    it("throws error if access to team project fails", () => __awaiter(void 0, void 0, void 0, function* () {
         coreApiMock.reset();
         coreApiMock.setup((x) => x.then).returns(() => undefined);
         coreApiMock.setup(api => api.getProjects(TypeMoq.It.isAny(), TypeMoq.It.isAny(), TypeMoq.It.isAny(), TypeMoq.It.isAny()))
             .throws(new Error());
         subject = new index.TfsRestService(azureDevOpsWebApiMock.object);
-        yield assert.rejects(() => __awaiter(this, void 0, void 0, function* () {
+        yield assert.rejects(() => __awaiter(void 0, void 0, void 0, function* () {
             return yield subject.initialize(index.AuthenticationMethodBasicAuthentication, "user", "pw", ServerUrl, TeamProjectName, true);
         }), {
             message: `Could not access projects - you're version of TFS might be too old, please check online for help.`
         });
     }));
-    it("getBuildsByStatus returns all builds of the specified build definition", () => __awaiter(this, void 0, void 0, function* () {
+    it("getBuildsByStatus returns all builds of the specified build definition", () => __awaiter(void 0, void 0, void 0, function* () {
         const BuildDefinitionName = "MyBuild";
         const BuildDefinitionID = 42;
         const ExpectedBuildStatus = buildInterfaces.BuildStatus.InProgress;
@@ -302,32 +303,32 @@ describe("TFS Rest Service Tests", () => {
         var expectedBuilds = [buildMock.object];
         buildDefinitionReferenceMock.setup(x => x.id).returns(() => BuildDefinitionID);
         buildApiMock.setup(x => x.getBuilds(TeamProjectId, [BuildDefinitionID], null, null, null, null, null, null, ExpectedBuildStatus))
-            .returns(() => __awaiter(this, void 0, void 0, function* () { return expectedBuilds; }));
+            .returns(() => __awaiter(void 0, void 0, void 0, function* () { return expectedBuilds; }));
         buildApiMock.setup(x => x.getDefinitions(TeamProjectId, BuildDefinitionName))
-            .returns(() => __awaiter(this, void 0, void 0, function* () { return [buildDefinitionReferenceMock.object]; }));
+            .returns(() => __awaiter(void 0, void 0, void 0, function* () { return [buildDefinitionReferenceMock.object]; }));
         yield subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
         var actualBuilds = yield subject.getBuildsByStatus(BuildDefinitionName, ExpectedBuildStatus);
         assert.equal(expectedBuilds, actualBuilds);
     }));
-    it("ignores if build to cancel has already completed", () => __awaiter(this, void 0, void 0, function* () {
+    it("ignores if build to cancel has already completed", () => __awaiter(void 0, void 0, void 0, function* () {
         const BuildId = 1337;
         var buildMock = setupBuildMock(BuildId);
         buildMock.setup(x => x.status).returns(() => buildInterfaces.BuildStatus.Completed);
         yield subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
         yield subject.cancelBuild(BuildId);
-        buildApiMock.verify(x => x.updateBuild(TypeMoq.It.isAny(), BuildId, TeamProjectId), TypeMoq.Times.never());
+        buildApiMock.verify(x => x.updateBuild(TypeMoq.It.isAny(), TeamProjectId, BuildId), TypeMoq.Times.never());
         assert(consoleLogSpy.calledWith(`Build ${BuildId} has already finished.`));
     }));
-    it("updates build with cancelling status if it has not already completed", () => __awaiter(this, void 0, void 0, function* () {
+    it("updates build with cancelling status if it has not already completed", () => __awaiter(void 0, void 0, void 0, function* () {
         const BuildId = 1337;
         var expectedRequest = { status: buildInterfaces.BuildStatus.Cancelling };
         var buildMock = setupBuildMock(BuildId);
         buildMock.setup(x => x.status).returns(() => buildInterfaces.BuildStatus.InProgress);
         yield subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
         yield subject.cancelBuild(BuildId);
-        buildApiMock.verify(x => x.updateBuild(expectedRequest, BuildId, TeamProjectId), TypeMoq.Times.once());
+        buildApiMock.verify(x => x.updateBuild(expectedRequest, TeamProjectId, BuildId), TypeMoq.Times.once());
     }));
-    it("returns true when we check if builds have finished and the status is completed", () => __awaiter(this, void 0, void 0, function* () {
+    it("returns true when we check if builds have finished and the status is completed", () => __awaiter(void 0, void 0, void 0, function* () {
         const BuildId = 1337;
         var buildMock = setupBuildMock(BuildId);
         buildMock.setup(x => x.status).returns(() => buildInterfaces.BuildStatus.Completed);
@@ -335,7 +336,7 @@ describe("TFS Rest Service Tests", () => {
         var isFinished = yield subject.areBuildsFinished([BuildId], false, false);
         assert.equal(true, isFinished);
     }));
-    it("returns false when we check if builds have finished and the status is not completed", () => __awaiter(this, void 0, void 0, function* () {
+    it("returns false when we check if builds have finished and the status is not completed", () => __awaiter(void 0, void 0, void 0, function* () {
         const BuildId = 1337;
         var buildMock = setupBuildMock(BuildId);
         buildMock.setup(x => x.status).returns(() => buildInterfaces.BuildStatus.InProgress);
@@ -343,7 +344,7 @@ describe("TFS Rest Service Tests", () => {
         var isFinished = yield subject.areBuildsFinished([BuildId], false, false);
         assert.equal(false, isFinished);
     }));
-    it("returns true when we check if two builds have finished and both have", () => __awaiter(this, void 0, void 0, function* () {
+    it("returns true when we check if two builds have finished and both have", () => __awaiter(void 0, void 0, void 0, function* () {
         const BuildId1 = 1337;
         const BuildId2 = 42;
         var buildMock1 = setupBuildMock(BuildId1);
@@ -354,7 +355,7 @@ describe("TFS Rest Service Tests", () => {
         var isFinished = yield subject.areBuildsFinished([BuildId1, BuildId2], false, false);
         assert.equal(true, isFinished);
     }));
-    it("returns false when we check if two builds have finished and only has so far", () => __awaiter(this, void 0, void 0, function* () {
+    it("returns false when we check if two builds have finished and only has so far", () => __awaiter(void 0, void 0, void 0, function* () {
         const BuildId1 = 1337;
         const BuildId2 = 42;
         var buildMock1 = setupBuildMock(BuildId1);
@@ -365,7 +366,7 @@ describe("TFS Rest Service Tests", () => {
         var isFinished = yield subject.areBuildsFinished([BuildId1, BuildId2], false, false);
         assert.equal(false, isFinished);
     }));
-    it("does not throw if build has not successfully completed and is not configured to fail on non successful builds", () => __awaiter(this, void 0, void 0, function* () {
+    it("does not throw if build has not successfully completed and is not configured to fail on non successful builds", () => __awaiter(void 0, void 0, void 0, function* () {
         const BuildId = 1337;
         const BuildDefinitionName = "Failed Build";
         const BuildUrl = "https://whatever.my.build.is";
@@ -383,7 +384,7 @@ describe("TFS Rest Service Tests", () => {
         var actual = yield subject.areBuildsFinished([BuildId], false, false);
         assert.equal(true, actual);
     }));
-    it("throws if build has not successfully completed and is configured to fail on non successful builds", () => __awaiter(this, void 0, void 0, function* () {
+    it("throws if build has not successfully completed and is configured to fail on non successful builds", () => __awaiter(void 0, void 0, void 0, function* () {
         const BuildId = 1337;
         const BuildDefinitionName = "Failed Build";
         const BuildUrl = "https://whatever.my.build.is";
@@ -399,11 +400,11 @@ describe("TFS Rest Service Tests", () => {
         buildMock.setup(x => x.definition).returns(() => definition);
         buildMock.setup(x => x._links).returns(() => links);
         yield subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
-        assert.rejects(() => __awaiter(this, void 0, void 0, function* () { return yield subject.areBuildsFinished([BuildId], true, false); }), {
+        assert.rejects(() => __awaiter(void 0, void 0, void 0, function* () { return yield subject.areBuildsFinished([BuildId], true, false); }), {
             message: `Build ${BuildId} (${BuildDefinitionName}) was not successful. See following link for more info: ${BuildUrl}`
         });
     }));
-    it("does not throw if build was partially successful and is configured to fail on non successful builds", () => __awaiter(this, void 0, void 0, function* () {
+    it("does not throw if build was partially successful and is configured to fail on non successful builds", () => __awaiter(void 0, void 0, void 0, function* () {
         const BuildId = 1337;
         const BuildDefinitionName = "Failed Build";
         const BuildUrl = "https://whatever.my.build.is";
@@ -421,7 +422,7 @@ describe("TFS Rest Service Tests", () => {
         var actualValue = yield subject.areBuildsFinished([BuildId], true, true);
         assert.equal(true, actualValue);
     }));
-    it("does not throw if build was partially successful and is configured to fail on non successful builds", () => __awaiter(this, void 0, void 0, function* () {
+    it("does not throw if build was partially successful and is configured to fail on non successful builds", () => __awaiter(void 0, void 0, void 0, function* () {
         const BuildId = 1337;
         const BuildDefinitionName = "Failed Build";
         const BuildUrl = "https://whatever.my.build.is";
@@ -437,30 +438,30 @@ describe("TFS Rest Service Tests", () => {
         buildMock.setup(x => x.definition).returns(() => definition);
         buildMock.setup(x => x._links).returns(() => links);
         yield subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
-        assert.rejects(() => __awaiter(this, void 0, void 0, function* () { return yield subject.areBuildsFinished([BuildId], true, false); }), {
+        assert.rejects(() => __awaiter(void 0, void 0, void 0, function* () { return yield subject.areBuildsFinished([BuildId], true, false); }), {
             message: `Build ${BuildId} (${BuildDefinitionName}) was not successful. See following link for more info: ${BuildUrl}`
         });
     }));
-    it("gets queue id by name if queue exists", () => __awaiter(this, void 0, void 0, function* () {
+    it("gets queue id by name if queue exists", () => __awaiter(void 0, void 0, void 0, function* () {
         const QueueName = "MyQueue";
         const ExpectedQueueId = 12;
         var taskAgentQueueMock = TypeMoq.Mock.ofType();
         taskAgentQueueMock.setup(x => x.name).returns(() => QueueName);
         taskAgentQueueMock.setup(x => x.id).returns(() => ExpectedQueueId);
-        taskAgentApiMock.setup(x => x.getAgentQueues(TeamProjectId, QueueName)).returns(() => __awaiter(this, void 0, void 0, function* () { return [taskAgentQueueMock.object]; }));
+        taskAgentApiMock.setup(x => x.getAgentQueues(TeamProjectId, QueueName)).returns(() => __awaiter(void 0, void 0, void 0, function* () { return [taskAgentQueueMock.object]; }));
         yield subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
         var actualQueueId = yield subject.getQueueIdByName(QueueName);
         assert.equal(ExpectedQueueId, actualQueueId);
     }));
-    it("throws error if no queues with specified name were found", () => __awaiter(this, void 0, void 0, function* () {
+    it("throws error if no queues with specified name were found", () => __awaiter(void 0, void 0, void 0, function* () {
         const QueueName = "MyQueue";
-        taskAgentApiMock.setup(x => x.getAgentQueues(TeamProjectId, QueueName)).returns(() => __awaiter(this, void 0, void 0, function* () { return []; }));
+        taskAgentApiMock.setup(x => x.getAgentQueues(TeamProjectId, QueueName)).returns(() => __awaiter(void 0, void 0, void 0, function* () { return []; }));
         yield subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
-        assert.rejects(() => __awaiter(this, void 0, void 0, function* () { return yield subject.getQueueIdByName(QueueName); }), {
+        assert.rejects(() => __awaiter(void 0, void 0, void 0, function* () { return yield subject.getQueueIdByName(QueueName); }), {
             message: `Could not find any Queue with the name ${QueueName}`
         });
     }));
-    it("throws error if multiple queues with name were found", () => __awaiter(this, void 0, void 0, function* () {
+    it("throws error if multiple queues with name were found", () => __awaiter(void 0, void 0, void 0, function* () {
         const QueueName = "MyQueue";
         var taskAgentQueueMock1 = TypeMoq.Mock.ofType();
         taskAgentQueueMock1.setup(x => x.name).returns(() => QueueName);
@@ -469,13 +470,13 @@ describe("TFS Rest Service Tests", () => {
         taskAgentQueueMock2.setup(x => x.name).returns(() => QueueName);
         taskAgentQueueMock2.setup(x => x.id).returns(() => 42);
         taskAgentApiMock.setup(x => x.getAgentQueues(TeamProjectId, QueueName))
-            .returns(() => __awaiter(this, void 0, void 0, function* () { return [taskAgentQueueMock1.object, taskAgentQueueMock2.object]; }));
+            .returns(() => __awaiter(void 0, void 0, void 0, function* () { return [taskAgentQueueMock1.object, taskAgentQueueMock2.object]; }));
         yield subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
-        assert.rejects(() => __awaiter(this, void 0, void 0, function* () { return yield subject.getQueueIdByName(QueueName); }), {
+        assert.rejects(() => __awaiter(void 0, void 0, void 0, function* () { return yield subject.getQueueIdByName(QueueName); }), {
             message: `Could not find any Queue with the name ${QueueName}`
         });
     }));
-    it("returns true when checking if build is finished and state is completed", () => __awaiter(this, void 0, void 0, function* () {
+    it("returns true when checking if build is finished and state is completed", () => __awaiter(void 0, void 0, void 0, function* () {
         const BuildId = 42;
         var buildMock = setupBuildMock(BuildId);
         buildMock.setup(x => x.status).returns(() => buildInterfaces.BuildStatus.Completed);
@@ -499,7 +500,7 @@ describe("TFS Rest Service Tests", () => {
             assert.equal(false, isFinished);
         }));
     });
-    it("returns true when checking if build was successful and result is succeeded", () => __awaiter(this, void 0, void 0, function* () {
+    it("returns true when checking if build was successful and result is succeeded", () => __awaiter(void 0, void 0, void 0, function* () {
         const BuildId = 42;
         var buildMock = setupBuildMock(BuildId);
         buildMock.setup(x => x.result).returns(() => buildInterfaces.BuildResult.Succeeded);
@@ -521,27 +522,27 @@ describe("TFS Rest Service Tests", () => {
             assert.equal(false, wasSuccessful);
         }));
     });
-    it("returns correct id when asking for ID of Build Definition", () => __awaiter(this, void 0, void 0, function* () {
+    it("returns correct id when asking for ID of Build Definition", () => __awaiter(void 0, void 0, void 0, function* () {
         const DefinitionName = "MyDefinition";
         const ExpectedId = 12;
         var buildDefinitionReferenceMock = TypeMoq.Mock.ofType();
         buildDefinitionReferenceMock.setup(x => x.id).returns(() => ExpectedId);
         buildApiMock.setup(x => x.getDefinitions(TeamProjectId, DefinitionName))
-            .returns(() => __awaiter(this, void 0, void 0, function* () { return [buildDefinitionReferenceMock.object]; }));
+            .returns(() => __awaiter(void 0, void 0, void 0, function* () { return [buildDefinitionReferenceMock.object]; }));
         yield subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
         var actualId = yield subject.getBuildDefinitionId(DefinitionName);
         assert.equal(ExpectedId, actualId);
     }));
-    it("throws when asking for ID of Build Definition and no build definition with that name exists", () => __awaiter(this, void 0, void 0, function* () {
+    it("throws when asking for ID of Build Definition and no build definition with that name exists", () => __awaiter(void 0, void 0, void 0, function* () {
         const DefinitionName = "MyDefinition";
         buildApiMock.setup(x => x.getDefinitions(TeamProjectId, DefinitionName))
-            .returns(() => __awaiter(this, void 0, void 0, function* () { return []; }));
+            .returns(() => __awaiter(void 0, void 0, void 0, function* () { return []; }));
         yield subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
-        assert.rejects(() => __awaiter(this, void 0, void 0, function* () { return yield subject.getBuildDefinitionId(DefinitionName); }), {
+        assert.rejects(() => __awaiter(void 0, void 0, void 0, function* () { return yield subject.getBuildDefinitionId(DefinitionName); }), {
             message: `Did not find any build definition with this name: ${DefinitionName}`
         });
     }));
-    it("throws when asking for ID of Build Definition and more than 1 build definition with that name exists", () => __awaiter(this, void 0, void 0, function* () {
+    it("throws when asking for ID of Build Definition and more than 1 build definition with that name exists", () => __awaiter(void 0, void 0, void 0, function* () {
         const DefinitionName = "MyDefinition";
         const ExpectedId = 12;
         var buildDefinitionReferenceMock1 = TypeMoq.Mock.ofType();
@@ -549,48 +550,48 @@ describe("TFS Rest Service Tests", () => {
         var buildDefinitionReferenceMock2 = TypeMoq.Mock.ofType();
         buildDefinitionReferenceMock2.setup(x => x.id).returns(() => ExpectedId);
         buildApiMock.setup(x => x.getDefinitions(TeamProjectId, DefinitionName))
-            .returns(() => __awaiter(this, void 0, void 0, function* () { return [buildDefinitionReferenceMock1.object, buildDefinitionReferenceMock2.object]; }));
+            .returns(() => __awaiter(void 0, void 0, void 0, function* () { return [buildDefinitionReferenceMock1.object, buildDefinitionReferenceMock2.object]; }));
         yield subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
-        assert.rejects(() => __awaiter(this, void 0, void 0, function* () { return yield subject.getBuildDefinitionId(DefinitionName); }), {
+        assert.rejects(() => __awaiter(void 0, void 0, void 0, function* () { return yield subject.getBuildDefinitionId(DefinitionName); }), {
             message: `Did not find any build definition with this name: ${DefinitionName}`
         });
     }));
-    it("returns associated changes when asking for them given a specific build", () => __awaiter(this, void 0, void 0, function* () {
+    it("returns associated changes when asking for them given a specific build", () => __awaiter(void 0, void 0, void 0, function* () {
         const BuildId = 1337;
         var buildMock = setupBuildMock(BuildId);
         var changeMock = TypeMoq.Mock.ofType();
         var expectedChanges = [changeMock.object];
         buildApiMock.setup(x => x.getBuildChanges(TeamProjectId, BuildId))
-            .returns(() => __awaiter(this, void 0, void 0, function* () { return expectedChanges; }));
+            .returns(() => __awaiter(void 0, void 0, void 0, function* () { return expectedChanges; }));
         yield subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
         var actualChanges = yield subject.getAssociatedChanges(buildMock.object);
         assert.equal(expectedChanges, actualChanges);
     }));
-    it("returns test runs in correct order", () => __awaiter(this, void 0, void 0, function* () {
+    it("returns test runs in correct order", () => __awaiter(void 0, void 0, void 0, function* () {
         const RunName = "Testrun";
         var testRun1 = setupTestRunMock(testInterfaces.TestRunState.Completed, RunName).object;
         var testRun2 = setupTestRunMock(testInterfaces.TestRunState.Completed, RunName).object;
-        testApiMock.setup(x => x.getTestRuns(TeamProjectId)).returns(() => __awaiter(this, void 0, void 0, function* () { return [testRun1, testRun2]; }));
+        testApiMock.setup(x => x.getTestRuns(TeamProjectId)).returns(() => __awaiter(void 0, void 0, void 0, function* () { return [testRun1, testRun2]; }));
         yield subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
         var actualTestRuns = yield subject.getTestRuns(RunName, 2);
         assert.equal(testRun1, actualTestRuns[0]);
         assert.equal(testRun2, actualTestRuns[1]);
     }));
-    it("returns only specified number of test runs", () => __awaiter(this, void 0, void 0, function* () {
+    it("returns only specified number of test runs", () => __awaiter(void 0, void 0, void 0, function* () {
         const RunName = "Testrun";
         var testRun1 = setupTestRunMock(testInterfaces.TestRunState.Completed, RunName).object;
         var testRun2 = setupTestRunMock(testInterfaces.TestRunState.Completed, RunName).object;
-        testApiMock.setup(x => x.getTestRuns(TeamProjectId)).returns(() => __awaiter(this, void 0, void 0, function* () { return [testRun1, testRun2]; }));
+        testApiMock.setup(x => x.getTestRuns(TeamProjectId)).returns(() => __awaiter(void 0, void 0, void 0, function* () { return [testRun1, testRun2]; }));
         yield subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
         var actualTestRuns = yield subject.getTestRuns(RunName, 1);
         assert.equal(1, actualTestRuns.length);
     }));
-    it("skips test runs from different run", () => __awaiter(this, void 0, void 0, function* () {
+    it("skips test runs from different run", () => __awaiter(void 0, void 0, void 0, function* () {
         const RunName = "Testrun";
         var testRun1 = setupTestRunMock(testInterfaces.TestRunState.Completed, RunName).object;
         var testRun2 = setupTestRunMock(testInterfaces.TestRunState.Completed, "some other run").object;
         var testRun3 = setupTestRunMock(testInterfaces.TestRunState.Completed, RunName).object;
-        testApiMock.setup(x => x.getTestRuns(TeamProjectId)).returns(() => __awaiter(this, void 0, void 0, function* () { return [testRun1, testRun2, testRun3]; }));
+        testApiMock.setup(x => x.getTestRuns(TeamProjectId)).returns(() => __awaiter(void 0, void 0, void 0, function* () { return [testRun1, testRun2, testRun3]; }));
         yield subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
         var actualTestRuns = yield subject.getTestRuns(RunName, 2);
         assert.equal(testRun1, actualTestRuns[0]);
@@ -615,22 +616,22 @@ describe("TFS Rest Service Tests", () => {
             assert.equal(testRun3, actualTestRuns[1]);
         }));
     });
-    it("skips undefined test runs", () => __awaiter(this, void 0, void 0, function* () {
+    it("skips undefined test runs", () => __awaiter(void 0, void 0, void 0, function* () {
         const RunName = "Testrun";
         var testRun1 = setupTestRunMock(testInterfaces.TestRunState.Completed, RunName).object;
         var testRun2 = undefined;
         var testRun3 = setupTestRunMock(testInterfaces.TestRunState.Completed, RunName).object;
-        testApiMock.setup(x => x.getTestRuns(TeamProjectId)).returns(() => __awaiter(this, void 0, void 0, function* () { return [testRun1, testRun2, testRun3]; }));
+        testApiMock.setup(x => x.getTestRuns(TeamProjectId)).returns(() => __awaiter(void 0, void 0, void 0, function* () { return [testRun1, testRun2, testRun3]; }));
         yield subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
         var actualTestRuns = yield subject.getTestRuns(RunName, 2);
         assert.equal(testRun1, actualTestRuns[0]);
         assert.equal(testRun3, actualTestRuns[1]);
     }));
-    it("skips downloading if noartifacts were found to download", () => __awaiter(this, void 0, void 0, function* () {
+    it("skips downloading if noartifacts were found to download", () => __awaiter(void 0, void 0, void 0, function* () {
         const BuildId = 111;
         var downloadDirectory = `C:\\users\\someUser\\Downloads`;
-        buildApiMock.setup(x => x.getArtifacts(BuildId, TeamProjectId))
-            .returns(() => __awaiter(this, void 0, void 0, function* () { return []; }));
+        buildApiMock.setup(x => x.getArtifacts(TeamProjectId, BuildId))
+            .returns(() => __awaiter(void 0, void 0, void 0, function* () { return []; }));
         fsStub.withArgs(downloadDirectory).returns(true);
         yield subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
         yield subject.downloadArtifacts(BuildId, downloadDirectory);
@@ -638,11 +639,11 @@ describe("TFS Rest Service Tests", () => {
         assert(consoleLogSpy.calledWith(`No artifacts found for build ${BuildId} - skipping...`));
         assert(consoleLogSpy.neverCalledWith("Found 0 artifact(s)"));
     }));
-    it("creates download directory if it doesnt exist yet", () => __awaiter(this, void 0, void 0, function* () {
+    it("creates download directory if it doesnt exist yet", () => __awaiter(void 0, void 0, void 0, function* () {
         const BuildId = 111;
         var downloadDirectory = `C:\\users\\someUser\\Downloads`;
-        buildApiMock.setup(x => x.getArtifacts(BuildId, TeamProjectId))
-            .returns(() => __awaiter(this, void 0, void 0, function* () { return []; }));
+        buildApiMock.setup(x => x.getArtifacts(TeamProjectId, BuildId))
+            .returns(() => __awaiter(void 0, void 0, void 0, function* () { return []; }));
         fsStub.withArgs(downloadDirectory).returns(false);
         var mkDirStub = sinon.stub(fs, "mkdirSync");
         yield subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
@@ -675,7 +676,7 @@ describe("TFS Rest Service Tests", () => {
         var buildMock = TypeMoq.Mock.ofType();
         buildMock.setup((x) => x.then).returns(() => undefined);
         buildMock.setup(x => x.id).returns(() => buildId);
-        buildApiMock.setup(x => x.getBuild(buildId, TeamProjectId)).returns(() => __awaiter(this, void 0, void 0, function* () { return buildMock.object; }));
+        buildApiMock.setup(x => x.getBuild(TeamProjectId, buildId)).returns(() => __awaiter(this, void 0, void 0, function* () { return buildMock.object; }));
         return buildMock;
     }
 });

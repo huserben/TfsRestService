@@ -19,25 +19,25 @@
   "license": "MIT",
   "homepage": "https://github.com/huserben/TfsRestService#readme",
   "dependencies": {
-    "@types/vso-node-api": "^4.0.0",
-    "azure-devops-node-api": "^6.6.3",
-    "linqts": "1.10.0",
-    "natives": "^1.1.6",
-    "ts-data.stack": "^1.0.6",
-    "typed-rest-client": "^1.5.0"
+    "azure-devops-node-api": "^10.2.1",
+    "linqts": "1.14.4",
+    "natives": "1.1.6",
+    "ts-data.stack": "1.0.6",
+    "typed-rest-client": "1.8.1"
   },
   "devDependencies": {
-    "@types/mocha": "^2.2.44",
-    "@types/node": "^8.10.49",
-    "@types/sinon": "^2.3.7",
-    "gulp": "^4.0.2",
-    "gulp-cli": "^2.2.0",
-    "gulp-mocha": "^6.0.0",
-    "gulp-typescript": "^5.0.1",
-    "mocha": "^4.0.1",
-    "sinon": "^4.5.0",
-    "ts-sinon": "^1.0.17",
-    "typemoq": "^2.1.0",
-    "typescript": "^2.9.2"
+    "@types/mocha": "8.2.0",
+    "@types/node": "14.14.27",
+    "@types/sinon": "9.0.10",
+    "@types/vso-node-api": "4.0.0",
+    "gulp": "4.0.2",
+    "gulp-cli": "2.3.0",
+    "gulp-mocha": "7.0.2",
+    "gulp-typescript": "5.0.1",
+    "mocha": "^8.3.0",
+    "sinon": "9.2.4",
+    "ts-sinon": "2.0.1",
+    "typemoq": "2.1.0",
+    "typescript": "4.1.5"
   }
 }

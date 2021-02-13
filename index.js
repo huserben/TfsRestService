@@ -1,13 +1,15 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.TfsRestService = exports.AuthenticationMethodPersonalAccessToken = exports.AuthenticationMethodBasicAuthentication = exports.AuthenticationMethodOAuthToken = exports.TfsRepositoryType = exports.RepositoryType = exports.OAuthAccessToken = exports.CurrentBuildDefinition = exports.SourceBranch = exports.SourceVersion = exports.ReleaseRequestedForId = exports.ReleaseRequestedForUsername = exports.RequestedForUserId = exports.RequestedForUsername = exports.TeamProjectId = exports.TeamProject = exports.TeamFoundationCollectionUri = void 0;
 const fs = require("fs");
 const url = require("url");
 const linqts_1 = require("linqts");
@@ -188,7 +190,7 @@ class TfsRestService {
                 return;
             }
             var requestBody = { status: buildInterfaces.BuildStatus.Cancelling };
-            yield this.makeRequest(() => this.vstsBuildApi.updateBuild(requestBody, buildId, this.teamProjectId));
+            yield this.makeRequest(() => this.vstsBuildApi.updateBuild(requestBody, this.teamProjectId, buildId));
         });
     }
     downloadArtifacts(buildId, downloadDirectory) {
@@ -201,7 +203,7 @@ class TfsRestService {
             if (!downloadDirectory.endsWith("\\")) {
                 downloadDirectory += "\\";
             }
-            var result = yield this.makeRequest(() => this.vstsBuildApi.getArtifacts(buildId, this.teamProjectId));
+            var result = yield this.makeRequest(() => this.vstsBuildApi.getArtifacts(this.teamProjectId, buildId));
             if (result.length === 0) {
                 console.log(`No artifacts found for build ${buildId} - skipping...`);
                 return;
@@ -224,7 +226,7 @@ class TfsRestService {
                     fileName = `${artifact.name}${index}.${fileFormat}`;
                     index++;
                 }
-                const artifactStream = yield this.vstsBuildApi.getArtifactContentZip(buildId, artifact.name, this.teamProjectId);
+                const artifactStream = yield this.vstsBuildApi.getArtifactContentZip(this.teamProjectId, buildId, artifact.name);
                 const fileStream = fs.createWriteStream(downloadDirectory + fileName);
                 artifactStream.pipe(fileStream);
                 fileStream.on("close", () => {
@@ -288,7 +290,7 @@ class TfsRestService {
     }
     getBuildInfo(buildId) {
         return __awaiter(this, void 0, void 0, function* () {
-            var build = yield this.makeRequest(() => this.vstsBuildApi.getBuild(buildId, this.teamProjectId));
+            var build = yield this.makeRequest(() => this.vstsBuildApi.getBuild(this.teamProjectId, buildId));
             return build;
         });
     }
