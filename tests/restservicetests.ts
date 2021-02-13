@@ -110,7 +110,7 @@ describe("TFS Rest Service Tests", () => {
         var expectedBuildToTrigger: any = {
             definition: { id: BuilDefinitionId },
             parameters: "",
-            SourceBranch: SourceBranch
+            sourceBranch: SourceBranch
         };
 
         setupBuildIdForBuildDefinition(BuildDefinitionName, BuilDefinitionId);
@@ -234,7 +234,14 @@ describe("TFS Rest Service Tests", () => {
         var expectedBuildToTrigger: any = {
             definition: { id: BuilDefinitionId },
             parameters: "",
-            demands: expectedDemands
+            demands: [{
+                name: "SomeDemand",
+                value: null
+            },
+            {
+                name: "OtherDemand",
+                value: "12"
+            }]
         };
 
         setupBuildIdForBuildDefinition(BuildDefinitionName, BuilDefinitionId);

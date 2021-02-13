@@ -85,7 +85,7 @@ describe("TFS Rest Service Tests", () => {
         var expectedBuildToTrigger = {
             definition: { id: BuilDefinitionId },
             parameters: "",
-            SourceBranch: SourceBranch
+            sourceBranch: SourceBranch
         };
         setupBuildIdForBuildDefinition(BuildDefinitionName, BuilDefinitionId);
         yield subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
@@ -165,7 +165,14 @@ describe("TFS Rest Service Tests", () => {
         var expectedBuildToTrigger = {
             definition: { id: BuilDefinitionId },
             parameters: "",
-            demands: expectedDemands
+            demands: [{
+                    name: "SomeDemand",
+                    value: null
+                },
+                {
+                    name: "OtherDemand",
+                    value: "12"
+                }]
         };
         setupBuildIdForBuildDefinition(BuildDefinitionName, BuilDefinitionId);
         yield subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);

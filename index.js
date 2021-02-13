@@ -142,10 +142,10 @@ class TfsRestService {
             var buildId = yield this.getBuildDefinitionId(buildDefinitionName);
             var buildToTrigger = {
                 definition: { id: buildId },
-                parameters: this.buildParameterString(buildParameters)
+                parameters: this.buildParameterString(buildParameters),
             };
             if (branch !== null) {
-                buildToTrigger.SourceBranch = branch;
+                buildToTrigger.sourceBranch = branch;
             }
             if (requestedForUserID !== undefined && requestedForUserID !== "") {
                 buildToTrigger.requestedFor = { id: requestedForUserID };
@@ -157,7 +157,16 @@ class TfsRestService {
                 buildToTrigger.queue = { id: queueId };
             }
             if (demands !== null && demands.length > 0) {
-                buildToTrigger.demands = demands;
+                buildToTrigger.demands = [];
+                demands.forEach(demand => {
+                    var demandSplit = demand.split('=');
+                    var demandName = demandSplit[0].trim();
+                    var demandValue = null;
+                    if (demandSplit.length > 1) {
+                        demandValue = demandSplit[1].trim();
+                    }
+                    buildToTrigger.demands.push({ name: demandName, value: demandValue });
+                });
             }
             var result = yield this.makeRequest(() => this.vstsBuildApi.queueBuild(buildToTrigger, this.teamProjectId, true));
             return result;

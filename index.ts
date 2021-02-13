@@ -208,13 +208,13 @@ export class TfsRestService implements ITfsRestService {
         buildParameters: string): Promise<buildInterfaces.Build> {
         var buildId: number = await this.getBuildDefinitionId(buildDefinitionName);
 
-        var buildToTrigger: any = {
+        var buildToTrigger: buildInterfaces.Build = {
             definition: { id: buildId },
             parameters: this.buildParameterString(buildParameters)
         };
 
         if (branch !== null) {
-            buildToTrigger.SourceBranch = branch;
+            buildToTrigger.sourceBranch = branch;
         }
 
         if (requestedForUserID !== undefined && requestedForUserID !== "") {
@@ -230,7 +230,19 @@ export class TfsRestService implements ITfsRestService {
         }
 
         if (demands !== null && demands.length > 0) {
-            buildToTrigger.demands = demands;
+            buildToTrigger.demands = [];
+
+            demands.forEach(demand => {
+                var demandSplit : string[] = demand.split('=');
+                var demandName: string = demandSplit[0].trim();
+                var demandValue: string = null;
+
+                if (demandSplit.length > 1){
+                    demandValue = demandSplit[1].trim();
+                }
+
+                buildToTrigger.demands.push({name: demandName, value: demandValue})
+            });
         }
 
         var result: buildInterfaces.Build = await this.makeRequest(
