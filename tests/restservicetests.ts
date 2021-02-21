@@ -314,10 +314,13 @@ describe("TFS Rest Service Tests", () => {
         });
 
     [
+        [`\\\"VariableKey\\\": \\\"Value\\\"`, {"VariableKey":"Value"}],
         ["VariableKey: Value", {"VariableKey":"Value"}],
         ["VariableKey1: Value1, VariableKey2: Value2", {"VariableKey1":"Value1","VariableKey2":"Value2"}],
         ["VariableKey1: Value1, Value2, VariableKey2: Value3", {"VariableKey1":"Value1, Value2","VariableKey2":"Value3"}],
-        ["VariableKey: C:\Test\Something", {"VariableKey":"C:\Test\Something"}]
+        ["VariableKey: C:\Test\Something", {"VariableKey":"C:\Test\Something"}],
+        ["VariableKey: C:\Test\Something, otherValue, VariableKey2: MyValue", {"VariableKey":"C:\Test\Something, otherValue","VariableKey2":"MyValue"}],
+        [`agentNumberInPool: 2, paraPipelineOwner: IBC`, { "agentNumberInPool": "2", "paraPipelineOwner": "IBC"}]
     ]
         .forEach(function (input: any): void {
             it("queues new build with specified template parameters", async () => {
@@ -326,7 +329,6 @@ describe("TFS Rest Service Tests", () => {
 
                 var templateParameterInput: string = input[0]
                 var expectedTemplateParameter: { [key: string]: string; } = input[1];
-                //expectedTemplateParameter["VariableKey"] = "Value";
 
                 var expectedBuildToTrigger: any = {
                     definition: { id: BuilDefinitionId },

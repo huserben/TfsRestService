@@ -441,12 +441,6 @@ export class TfsRestService implements ITfsRestService {
 
         parameterString = parameterString.trim();
 
-        if (parameterString.startsWith("{") && parameterString.endsWith("}")) {
-            console.log(`Specified Parameters are a json object - will be treated as is. Please make sure you handled any kind of escaping etc. yourself.`);
-            console.log(`Parameters: ${parameterString}`);
-            return null;
-        }
-
         var keyValuePairs: string[] = parameterString.split(",");
         for (var index: number = 0; index < keyValuePairs.length; index++) {
             var kvp: string = keyValuePairs[index];
