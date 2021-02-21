@@ -64,4 +64,5 @@ typings/
 /.vs/slnx.sqlite
 
 *.js
+*.js.map
 !gulpfile.js

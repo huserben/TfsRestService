@@ -26,7 +26,7 @@ export declare const AuthenticationMethodPersonalAccessToken: string;
 export interface ITfsRestService {
     initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, teamProject: string, ignoreSslError: boolean): Promise<void>;
     getBuildsByStatus(buildDefinitionName: string, statusFilter?: buildInterfaces.BuildStatus): Promise<buildInterfaces.Build[]>;
-    triggerBuild(buildDefinitionName: string, branch: string, requestedFor: string, sourceVersion: string, demands: string[], queueId: number, buildParameters: string): Promise<buildInterfaces.Build>;
+    triggerBuild(buildDefinitionName: string, branch: string, requestedFor: string, sourceVersion: string, demands: string[], queueId: number, buildParameters: string, templateParameters: string): Promise<buildInterfaces.Build>;
     downloadArtifacts(buildId: number, downloadDirectory: string): Promise<void>;
     getQueueIdByName(buildQueue: string): Promise<number>;
     getBuildInfo(buildId: number): Promise<buildInterfaces.Build>;
@@ -55,10 +55,10 @@ export declare class TfsRestService implements ITfsRestService {
     teamProjectId: string;
     azureDevOpsWebApi: IAzureDevOpsWebApi;
     genralFunctions: common.IGeneralFunctions;
-    constructor(azureDevOpsWebApi?: IAzureDevOpsWebApi);
+    constructor(azureDevOpsWebApi?: IAzureDevOpsWebApi, generalFunctions?: common.IGeneralFunctions);
     initialize(authenticationMethod: string, username: string, password: string, tfsServer: string, teamProject: string, ignoreSslError: boolean): Promise<void>;
     getBuildsByStatus(buildDefinitionName: string, statusFilter?: buildInterfaces.BuildStatus): Promise<buildInterfaces.Build[]>;
-    triggerBuild(buildDefinitionName: string, branch: string, requestedForUserID: string, sourceVersion: string, demands: string[], queueId: number, buildParameters: string): Promise<buildInterfaces.Build>;
+    triggerBuild(buildDefinitionName: string, branch: string, requestedForUserID: string, sourceVersion: string, demands: string[], queueId: number, buildParameters: string, templateParameters: string): Promise<buildInterfaces.Build>;
     areBuildsFinished(triggeredBuilds: number[], failIfNotSuccessful: boolean, treatPartiallySucceededBuildAsSuccessful: boolean): Promise<boolean>;
     cancelBuild(buildId: number): Promise<void>;
     downloadArtifacts(buildId: number, downloadDirectory: string): Promise<void>;
@@ -69,6 +69,7 @@ export declare class TfsRestService implements ITfsRestService {
     getBuildDefinitionId(buildDefinitionName: string): Promise<number>;
     getAssociatedChanges(build: buildInterfaces.Build): Promise<buildInterfaces.Change[]>;
     getBuildInfo(buildId: number): Promise<buildInterfaces.Build>;
+    private buildTemplateParameters;
     private buildParameterString;
     private updateCurlyBracesStack;
     private cleanValue;
