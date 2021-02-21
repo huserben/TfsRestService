@@ -50,7 +50,8 @@ export interface ITfsRestService {
         sourceVersion: string,
         demands: string[],
         queueId: number,
-        buildParameters: string): Promise<buildInterfaces.Build>;
+        buildParameters: string,
+        templateParameters: string): Promise<buildInterfaces.Build>;
     downloadArtifacts(buildId: number, downloadDirectory: string): Promise<void>;
     getQueueIdByName(buildQueue: string): Promise<number>;
     getBuildInfo(buildId: number): Promise<buildInterfaces.Build>;
@@ -206,13 +207,19 @@ export class TfsRestService implements ITfsRestService {
         sourceVersion: string,
         demands: string[],
         queueId: number,
-        buildParameters: string): Promise<buildInterfaces.Build> {
+        buildParameters: string,
+        templateParameters: string): Promise<buildInterfaces.Build> {
         var buildId: number = await this.getBuildDefinitionId(buildDefinitionName);
 
         var buildToTrigger: buildInterfaces.Build = {
             definition: { id: buildId },
-            parameters: this.buildParameterString(buildParameters)
+            parameters: this.createBuildParameterObject(buildParameters)
         };
+        
+        var tokenizedTemmplateParameters : {[key: string]: string; }  = this.parseParameterString(templateParameters)
+        if (tokenizedTemmplateParameters !== null){
+            buildToTrigger.templateParameters = tokenizedTemmplateParameters;
+        }
 
         if (branch !== null) {
             buildToTrigger.sourceBranch = branch;
@@ -425,29 +432,29 @@ export class TfsRestService implements ITfsRestService {
         return build;
     }
 
-    private buildParameterString(buildParameters: string): string {
-        var buildParametersAsDictionary: { [id: string]: string } = {};
+    private parseParameterString(parameterString: string) : { [key: string]: string; } {
+        var parameterDictionary: { [id: string]: string } = {};
 
-        if (buildParameters === null || buildParameters === undefined) {
-            return "";
+        if (parameterString === null || parameterString === undefined || parameterString === "") {
+            return null;
         }
 
-        buildParameters = buildParameters.trim();
+        parameterString = parameterString.trim();
 
-        if (buildParameters.startsWith("{") && buildParameters.endsWith("}")) {
-            console.log(`Specified Build Parameters are a json object - will be treated as is. Please make sure you handled any kind of escaping etc. yourself.`);
-            console.log(`Parameters: ${buildParameters}`);
-            return buildParameters;
+        if (parameterString.startsWith("{") && parameterString.endsWith("}")) {
+            console.log(`Specified Parameters are a json object - will be treated as is. Please make sure you handled any kind of escaping etc. yourself.`);
+            console.log(`Parameters: ${parameterString}`);
+            return null;
         }
 
-        var keyValuePairs: string[] = buildParameters.split(",");
+        var keyValuePairs: string[] = parameterString.split(",");
         for (var index: number = 0; index < keyValuePairs.length; index++) {
             var kvp: string = keyValuePairs[index];
             var splittedKvp: string[] = kvp.split(/:(.+)/);
             if (splittedKvp[0] === undefined || splittedKvp[1] === undefined) {
-                var errorMessage: string = `Build Parameters were not in expected format. Please verify that parameters are in the following format: \"VariableName: Value\"`;
+                var errorMessage: string = `Parameters were not in expected format. Please verify that parameters are in the following format: \"VariableName: Value\"`;
                 console.error(errorMessage);
-                console.error(`Specified build parameters: ${buildParameters}`);
+                console.error(`Specified build parameters: ${parameterString}`);
                 throw new Error(errorMessage);
             }
             var key: string = this.cleanValue(splittedKvp[0]);
@@ -483,10 +490,27 @@ export class TfsRestService implements ITfsRestService {
                 }
             }
             console.log(`Found parameter ${key} with value: ${value}`);
-            buildParametersAsDictionary[key] = value;
+            parameterDictionary[key] = value;
         }
 
-        return JSON.stringify(buildParametersAsDictionary);
+        return parameterDictionary;
+    }
+
+    private createBuildParameterObject(buildParameters: string): string {
+
+        if (buildParameters === null || buildParameters === undefined) {
+            return "";
+        }
+
+        buildParameters = buildParameters.trim();
+
+        if (buildParameters.startsWith("{") && buildParameters.endsWith("}")) {
+            console.log(`Specified Build Parameters are a json object - will be treated as is. Please make sure you handled any kind of escaping etc. yourself.`);
+            console.log(`Parameters: ${buildParameters}`);
+            return buildParameters;
+        }
+
+        return JSON.stringify(this.parseParameterString(buildParameters));
     }
 
     private updateCurlyBracesStack(openingCurlyBracesStack: Stack<string>, value: string): void {

@@ -96,7 +96,7 @@ describe("TFS Rest Service Tests", () => {
         await subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
 
         // act
-        await subject.triggerBuild(BuildDefinitionName, null, undefined, undefined, null, undefined, undefined);
+        await subject.triggerBuild(BuildDefinitionName, null, undefined, undefined, null, undefined, undefined, undefined);
 
         // assert
         buildApiMock.verify(x => x.queueBuild(expectedBuildToTrigger, TeamProjectId, true), TypeMoq.Times.once());
@@ -116,7 +116,7 @@ describe("TFS Rest Service Tests", () => {
         await subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
 
         // act
-        await subject.triggerBuild(`${BuilDefinitionId}`, null, undefined, undefined, null, undefined, undefined);
+        await subject.triggerBuild(`${BuilDefinitionId}`, null, undefined, undefined, null, undefined, undefined, null);
 
         // assert
         buildApiMock.verify(x => x.queueBuild(expectedBuildToTrigger, TeamProjectId, true), TypeMoq.Times.once());
@@ -138,7 +138,7 @@ describe("TFS Rest Service Tests", () => {
         await subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
 
         // act
-        await subject.triggerBuild(BuildDefinitionName, SourceBranch, undefined, undefined, null, undefined, undefined);
+        await subject.triggerBuild(BuildDefinitionName, SourceBranch, undefined, undefined, null, undefined, undefined, "");
 
         // assert
         buildApiMock.verify(x => x.queueBuild(expectedBuildToTrigger, TeamProjectId, true), TypeMoq.Times.once());
@@ -160,7 +160,7 @@ describe("TFS Rest Service Tests", () => {
         await subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
 
         // act
-        await subject.triggerBuild(BuildDefinitionName, null, RequestedUserId, undefined, null, undefined, undefined);
+        await subject.triggerBuild(BuildDefinitionName, null, RequestedUserId, undefined, null, undefined, undefined, undefined);
 
         // assert
         buildApiMock.verify(x => x.queueBuild(expectedBuildToTrigger, TeamProjectId, true), TypeMoq.Times.once());
@@ -186,7 +186,7 @@ describe("TFS Rest Service Tests", () => {
         // act
         var requestFailed: boolean = false;
         try {
-            await subject.triggerBuild(BuildDefinitionName, null, RequestedUserId, undefined, null, undefined, undefined);
+            await subject.triggerBuild(BuildDefinitionName, null, RequestedUserId, undefined, null, undefined, undefined, undefined);
         }
         catch {
             requestFailed = true;
@@ -217,7 +217,7 @@ describe("TFS Rest Service Tests", () => {
         await subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
 
         // act
-        await subject.triggerBuild(BuildDefinitionName, null, "", SourceVersion, null, undefined, undefined);
+        await subject.triggerBuild(BuildDefinitionName, null, "", SourceVersion, null, undefined, undefined, undefined);
 
         // assert
         buildApiMock.verify(x => x.queueBuild(expectedBuildToTrigger, TeamProjectId, true), TypeMoq.Times.once());
@@ -239,7 +239,7 @@ describe("TFS Rest Service Tests", () => {
         await subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
 
         // act
-        await subject.triggerBuild(BuildDefinitionName, null, "", "", null, QueueId, undefined);
+        await subject.triggerBuild(BuildDefinitionName, null, "", "", null, QueueId, undefined, undefined);
 
         // assert
         buildApiMock.verify(x => x.queueBuild(expectedBuildToTrigger, TeamProjectId, true), TypeMoq.Times.once());
@@ -269,7 +269,7 @@ describe("TFS Rest Service Tests", () => {
         await subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
 
         // act
-        await subject.triggerBuild(BuildDefinitionName, null, "", "", expectedDemands, null, undefined);
+        await subject.triggerBuild(BuildDefinitionName, null, "", "", expectedDemands, null, undefined, undefined);
 
         // assert
         buildApiMock.verify(x => x.queueBuild(expectedBuildToTrigger, TeamProjectId, true), TypeMoq.Times.once());
@@ -289,7 +289,7 @@ describe("TFS Rest Service Tests", () => {
         `{"ComplexJsonObject":"{ \\"MyValue\\": 17, \\"SubObject\\": { \\"Simple\\": \\"Hello\\", \\"OtherObject\\": { \\"Simple\\": 12}}}"}`],
     [`{ "01VarName": "...", "02VarName": "..." }`, `{ "01VarName": "...", "02VarName": "..." }`]]
         .forEach(function (input: any): void {
-            it("queues new build with specified parameters", async () => {
+            it("queues new build with specified build parameters", async () => {
                 const BuildDefinitionName: string = "MyBuildDefinition";
                 const BuilDefinitionId: number = 12;
 
@@ -306,7 +306,40 @@ describe("TFS Rest Service Tests", () => {
                 await subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
 
                 // act
-                await subject.triggerBuild(BuildDefinitionName, null, "", "", null, null, parameterInput);
+                await subject.triggerBuild(BuildDefinitionName, null, "", "", null, null, parameterInput, undefined);
+
+                // assert
+                buildApiMock.verify(x => x.queueBuild(expectedBuildToTrigger, TeamProjectId, true), TypeMoq.Times.once());
+            });
+        });
+
+    [
+        ["VariableKey: Value", {"VariableKey":"Value"}],
+        ["VariableKey1: Value1, VariableKey2: Value2", {"VariableKey1":"Value1","VariableKey2":"Value2"}],
+        ["VariableKey1: Value1, Value2, VariableKey2: Value3", {"VariableKey1":"Value1, Value2","VariableKey2":"Value3"}],
+        ["VariableKey: C:\Test\Something", {"VariableKey":"C:\Test\Something"}]
+    ]
+        .forEach(function (input: any): void {
+            it("queues new build with specified template parameters", async () => {
+                const BuildDefinitionName: string = "MyBuildDefinition";
+                const BuilDefinitionId: number = 12;
+
+                var templateParameterInput: string = input[0]
+                var expectedTemplateParameter: { [key: string]: string; } = input[1];
+                //expectedTemplateParameter["VariableKey"] = "Value";
+
+                var expectedBuildToTrigger: any = {
+                    definition: { id: BuilDefinitionId },
+                    parameters: "",
+                    templateParameters: expectedTemplateParameter
+                };
+
+                setupBuildIdForBuildDefinition(BuildDefinitionName, BuilDefinitionId);
+
+                await subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
+
+                // act
+                await subject.triggerBuild(BuildDefinitionName, null, "", "", null, null, undefined, templateParameterInput);
 
                 // assert
                 buildApiMock.verify(x => x.queueBuild(expectedBuildToTrigger, TeamProjectId, true), TypeMoq.Times.once());
@@ -325,7 +358,7 @@ describe("TFS Rest Service Tests", () => {
                 await subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
 
                 // act
-                assert.rejects(async () => await subject.triggerBuild(BuildDefinitionName, null, "", "", null, null, invalidParameter),
+                assert.rejects(async () => await subject.triggerBuild(BuildDefinitionName, null, "", "", null, null, invalidParameter, undefined),
                     {
                         message: `Build Parameters were not in expected format. Please verify that parameters are in the following format: \"VariableName: Value\"`
                     });
