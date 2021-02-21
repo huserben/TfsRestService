@@ -62,3 +62,6 @@ typings/
 /.vs/TfsRestService/config/applicationhost.config
 /.vs/tasks.vs.json
 /.vs/slnx.sqlite
+
+*.js
+!gulpfile.js
