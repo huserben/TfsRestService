@@ -102,6 +102,26 @@ describe("TFS Rest Service Tests", () => {
         buildApiMock.verify(x => x.queueBuild(expectedBuildToTrigger, TeamProjectId, true), TypeMoq.Times.once());
     });
 
+    it("queues new build for build definition with specified id", async () => {
+        const BuilDefinitionId: number = 12;
+
+        var expectedBuildToTrigger: any = {
+            definition: { id: BuilDefinitionId },
+            parameters: ""
+        };
+
+        buildApiMock.setup(x => x.getDefinitions(TeamProjectId, `${BuilDefinitionId}`))
+            .returns(async () => []);
+
+        await subject.initialize(index.AuthenticationMethodOAuthToken, "", "token", ServerUrl, TeamProjectName, true);
+
+        // act
+        await subject.triggerBuild(`${BuilDefinitionId}`, null, undefined, undefined, null, undefined, undefined);
+
+        // assert
+        buildApiMock.verify(x => x.queueBuild(expectedBuildToTrigger, TeamProjectId, true), TypeMoq.Times.once());
+    });
+
     it("queues new build in specified branch", async () => {
         const BuildDefinitionName: string = "MyBuildDefinition";
         const BuilDefinitionId: number = 12;
@@ -266,7 +286,8 @@ describe("TFS Rest Service Tests", () => {
     [`TrafficManagerEndpoints: { "a": 50, "b": 50 }, Key2: MyValue`,
         `{"TrafficManagerEndpoints":"{ \\"a\\": 50, \\"b\\": 50 }","Key2":"MyValue"}`],
     [`ComplexJsonObject: { "MyValue": 17, "SubObject": { "Simple": "Hello", "OtherObject": { "Simple": 12}}}`,
-        `{"ComplexJsonObject":"{ \\"MyValue\\": 17, \\"SubObject\\": { \\"Simple\\": \\"Hello\\", \\"OtherObject\\": { \\"Simple\\": 12}}}"}`]]
+        `{"ComplexJsonObject":"{ \\"MyValue\\": 17, \\"SubObject\\": { \\"Simple\\": \\"Hello\\", \\"OtherObject\\": { \\"Simple\\": 12}}}"}`],
+    [`{ "01VarName": "...", "02VarName": "..." }`, `{ "01VarName": "...", "02VarName": "..." }`]]
         .forEach(function (input: any): void {
             it("queues new build with specified parameters", async () => {
                 const BuildDefinitionName: string = "MyBuildDefinition";

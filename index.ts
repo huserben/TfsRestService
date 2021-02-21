@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as url from "url";
 import { List } from "linqts";
+import path = require('path');
 import * as vsts from "azure-devops-node-api";
 import * as buildApi from "azure-devops-node-api/BuildApi";
 import * as buildInterfaces from "azure-devops-node-api/interfaces/BuildInterfaces";
@@ -299,10 +300,6 @@ export class TfsRestService implements ITfsRestService {
             fs.mkdirSync(downloadDirectory);
         }
 
-        if (!downloadDirectory.endsWith("\\")) {
-            downloadDirectory += "\\";
-        }
-
         var result: buildInterfaces.BuildArtifact[] =
             await this.makeRequest(() => this.vstsBuildApi.getArtifacts(this.teamProjectId, buildId));
 
@@ -314,8 +311,8 @@ export class TfsRestService implements ITfsRestService {
         console.log(`Found ${result.length} artifact(s)`);
 
         for (let artifact of result) {
-            if (artifact.resource.type !== "Container") {
-                console.log(`Cannot download artifact ${artifact.name}. Only Containers are supported (type is \"${artifact.resource.type}\)"`);
+            if (artifact.resource.type.toLowerCase() !== "container") {
+                console.log(`Cannot download artifact ${artifact.name}. Only Containers are supported (type is \"${artifact.resource.type}"\)`);
                 continue;
             }
 
@@ -331,18 +328,21 @@ export class TfsRestService implements ITfsRestService {
             var fileName: string = `${artifact.name}.${fileFormat}`;
             var index: number = 1;
 
-            while (fs.existsSync(`${downloadDirectory}${fileName}`)) {
+            var filePath : string = path.join(downloadDirectory, fileName);
+
+            while (fs.existsSync(filePath)) {
                 console.log(`${fileName} already exists...`);
                 fileName = `${artifact.name}${index}.${fileFormat}`;
+                filePath = path.join(downloadDirectory, fileName);
                 index++;
             }
 
             const artifactStream: NodeJS.ReadableStream = await this.vstsBuildApi.getArtifactContentZip(
                 this.teamProjectId, buildId, artifact.name);
-            const fileStream: any = fs.createWriteStream(downloadDirectory + fileName);
+            const fileStream: any = fs.createWriteStream(filePath);
             artifactStream.pipe(fileStream);
             fileStream.on("close", () => {
-                console.log(`Stored artifact here: ${downloadDirectory}${fileName}`);
+                console.log(`Stored artifact here: ${filePath}`);
             });
         }
     }
@@ -397,7 +397,16 @@ export class TfsRestService implements ITfsRestService {
             () => this.vstsBuildApi.getDefinitions(this.teamProjectId, buildDefinitionName));
 
         if (result.length === 0) {
-            throw new Error(`Did not find any build definition with this name: ${buildDefinitionName}`);
+            console.log(`No build definition with name ${buildDefinitionName} found...`);
+
+            var buildId: number = parseInt(buildDefinitionName);
+
+            if (isNaN(buildId)) {
+                throw new Error(`Did not find any build definition with this name: ${buildDefinitionName}`);
+            }
+
+            console.log(`Specified build name is a number - will treat as build id...`);
+            return buildId;
         }
 
         return result[0].id;
@@ -421,6 +430,14 @@ export class TfsRestService implements ITfsRestService {
 
         if (buildParameters === null || buildParameters === undefined) {
             return "";
+        }
+
+        buildParameters = buildParameters.trim();
+
+        if (buildParameters.startsWith("{") && buildParameters.endsWith("}")) {
+            console.log(`Specified Build Parameters are a json object - will be treated as is. Please make sure you handled any kind of escaping etc. yourself.`);
+            console.log(`Parameters: ${buildParameters}`);
+            return buildParameters;
         }
 
         var keyValuePairs: string[] = buildParameters.split(",");
