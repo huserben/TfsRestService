@@ -495,6 +495,27 @@ describe("TFS Rest Service Tests", () => {
         coreApiMock.verify(x => x.getProjects(), TypeMoq.Times.never());
     });
 
+    it("uses team project name to get guid", async () => {
+        // act
+        await subject.initialize(
+            index.AuthenticationMethodBasicAuthentication, "no one cares", "SomePassword", ServerUrl, TeamProjectName, true);
+
+        // assert
+        coreApiMock.verify(x => x.getProjects(TypeMoq.It.isAny(), 300, TypeMoq.It.isAny(), TypeMoq.It.isAny()), TypeMoq.Times.once());
+    });
+    
+    it("uses specific top value for getting projects", async () => {
+        // act
+        var custom_top_value = 1337;
+        process.env.AzureNodeAPI_GetProjects_Top = `${custom_top_value}`;
+
+        await subject.initialize(
+            index.AuthenticationMethodBasicAuthentication, "no one cares", "SomePassword", ServerUrl, TeamProjectName, true);
+
+        // assert
+        coreApiMock.verify(x => x.getProjects(TypeMoq.It.isAny(), custom_top_value, TypeMoq.It.isAny(), TypeMoq.It.isAny()), TypeMoq.Times.once());
+    });
+
     it("fetches id from team projects via api if its not a guid", async () => {
         // act
         await subject.initialize(

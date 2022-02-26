@@ -538,9 +538,16 @@ export class TfsRestService implements ITfsRestService {
                 return;
             }
 
+            // 300 is the current maximum amount of projects for azure devops
+            // See: https://docs.microsoft.com/en-us/azure/devops/organizations/settings/work/object-limits?view=azure-devops
+            var numberOfProjects = 300;
+            if (process.env.AzureNodeAPI_GetProjects_Top){
+                numberOfProjects = Number.parseInt(process.env.AzureNodeAPI_GetProjects_Top);
+            }       
+
             console.log("Provided team project was no guid, trying to resolve ID via API...");
             var coreAgentApi: coreApi.ICoreApi = await connection.getCoreApi();
-            var projects: coreInterfaces.TeamProjectReference[] = await coreAgentApi.getProjects();
+            var projects: coreInterfaces.TeamProjectReference[] = await coreAgentApi.getProjects(null, numberOfProjects);
 
             for (let project of projects) {
                 if (project.name === teamProject) {
