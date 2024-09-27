@@ -279,6 +279,7 @@ describe("TFS Rest Service Tests", () => {
     ["VariableKey: Value", `{"VariableKey":"Value"}`],
     ["VariableKey1: Value1, VariableKey2: Value2", `{"VariableKey1":"Value1","VariableKey2":"Value2"}`],
     ["VariableKey1: Value1, Value2, VariableKey2: Value3", `{"VariableKey1":"Value1, Value2","VariableKey2":"Value3"}`],
+    ["Foo:A,B", `{"Foo":"A,B"}`],
     ["VariableKey: C:\Test\Something", `{"VariableKey":"C:\Test\Something"}`],
     ["VariableKey: C:\Test\Something, otherValue, VariableKey2: MyValue",
         `{"VariableKey":"C:\Test\Something, otherValue","VariableKey2":"MyValue"}`],

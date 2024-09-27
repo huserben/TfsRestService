@@ -451,8 +451,9 @@ export class TfsRestService implements ITfsRestService {
                 console.error(`Specified build parameters: ${parameterString}`);
                 throw new Error(errorMessage);
             }
-            var key: string = this.cleanValue(splittedKvp[0]);
-            var value: string = this.cleanValue(splittedKvp[1]);
+
+            var key: string = this.cleanValue(splittedKvp[0].trim());
+            var value: string = this.cleanValue(splittedKvp[1].trim());
             var checkNextValues: boolean = true;
 
             var openingCurlyBracesStack: Stack<string> = new Stack<string>();
@@ -467,7 +468,7 @@ export class TfsRestService implements ITfsRestService {
                 var nextValue: string = `${this.cleanValue(nextKvp)}`;
 
                 if (!openingCurlyBracesStack.isEmpty()) {
-                    value += `, ${nextValue}`;
+                    value += `,${nextValue}`;
                     index++;
 
                     this.updateCurlyBracesStack(openingCurlyBracesStack, nextValue);
@@ -477,7 +478,7 @@ export class TfsRestService implements ITfsRestService {
                     }
                 } else if (nextKvp.indexOf(":") === -1) {
                     // next Value is part of the value and was just separated by comma
-                    value += `, ${nextValue}`;
+                    value += `,${nextValue}`;
                     index++;
                 } else {
                     checkNextValues = false;
@@ -520,8 +521,6 @@ export class TfsRestService implements ITfsRestService {
     }
 
     private cleanValue(value: string): string {
-        value = value.trim();
-
         if (value.startsWith("\\\"") && value.endsWith("\\\"")) {
             value = value.substr(2, value.length - 4);
         }
